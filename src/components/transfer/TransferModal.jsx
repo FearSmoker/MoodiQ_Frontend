@@ -28,7 +28,7 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
   const handleLinkService = (service) => {
     // VITE_API_URL = https://moodiq-backend.onrender.com/api
     // We need: https://moodiq-backend.onrender.com/api/auth/youtube/auth
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const apiUrl = import.meta.env.VITE_API_URL;
     const authUrl = `${apiUrl}/auth/${service}/auth`;
     window.location.href = authUrl;
   };

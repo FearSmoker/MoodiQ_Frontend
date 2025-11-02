@@ -7,7 +7,7 @@ const useSocket = () => {
 
   useEffect(() => {
     // Get WebSocket URL from environment
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws';
+    const wsUrl = import.meta.env.VITE_WS_URL;
     
     if (!socket.current) {
       console.log('Connecting to WebSocket:', wsUrl);

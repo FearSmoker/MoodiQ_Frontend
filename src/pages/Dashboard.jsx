@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useSocket } from '../hooks/useSocket';
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [stats, setStats] = useState(null);
+  const [searchParams] = useSearchParams();
 
   // Connect to WebSocket
   const { isConnected } = useSocket();
@@ -24,7 +25,58 @@ const Dashboard = () => {
   useEffect(() => {
     fetchPlaylists();
     fetchUserStats();
-  }, []);
+    
+    // Check for success/error messages from OAuth callbacks
+    const error = searchParams.get('error');
+    const success = searchParams.get('success');
+    const message = searchParams.get('message');
+
+    if (success) {
+      let successMessage = message || 'Operation successful';
+      
+      switch(success) {
+        case 'youtube_linked':
+          successMessage = message || 'YouTube Music account linked successfully!';
+          break;
+        default:
+          successMessage = message || 'Success!';
+      }
+      
+      toast.success(successMessage, { duration: 4000 });
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/dashboard');
+    }
+
+    if (error) {
+      let errorMessage = message || 'An error occurred';
+      
+      switch(error) {
+        case 'youtube_denied':
+          errorMessage = message || 'You cancelled YouTube authorization';
+          break;
+        case 'youtube_no_code':
+          errorMessage = message || 'YouTube authorization failed - no code received';
+          break;
+        case 'youtube_auth_failed':
+          errorMessage = message || 'Failed to link YouTube account';
+          break;
+        case 'youtube_config_error':
+          errorMessage = 'YouTube configuration error. Please contact support.';
+          break;
+        case 'user_not_found':
+          errorMessage = message || 'Session expired. Please login again.';
+          break;
+        default:
+          errorMessage = message || 'An error occurred';
+      }
+      
+      toast.error(errorMessage, { duration: 5000 });
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/dashboard');
+    }
+  }, [searchParams]);
 
   const fetchUserStats = async () => {
     try {
@@ -100,6 +152,11 @@ const Dashboard = () => {
           <h2 className="text-xl font-semibold mb-4">Your Playlists</h2>
           {loading && !playlists.length ? (
             <Loader />
+          ) : playlists.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <p>No playlists found</p>
+              <p className="text-sm mt-2">Create some playlists on Spotify to get started!</p>
+            </div>
           ) : (
             <ul className="space-y-2 max-h-96 overflow-y-auto">
               {playlists.map((pl) => (
