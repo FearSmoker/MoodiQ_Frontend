@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { jwtDecode } from 'jwt-decode';
-import api from '../lib/api';
+import { getCurrentUser } from '../api/auth';
 
 export const useAuthStore = create(
   persist(
@@ -14,7 +14,6 @@ export const useAuthStore = create(
         try {
           const decoded = jwtDecode(token);
           set({ token, user: { id: decoded.id } });
-          get().fetchUser();
         } catch (e) {
           console.error("Invalid token", e);
           get().logout();
@@ -24,9 +23,9 @@ export const useAuthStore = create(
       fetchUser: async () => {
         try {
           set({ loading: true });
-          const { data } = await api.get('/auth/me');
+          const userData = await getCurrentUser();
           set((state) => ({ 
-            user: { ...state.user, ...data },
+            user: { ...state.user, ...userData },
             loading: false,
           }));
         } catch (e) {
@@ -40,17 +39,9 @@ export const useAuthStore = create(
 
       logout: () => {
         set({ token: null, user: null });
-        // Redirect to login
-        window.location.href = '/login';
+        window.location.href = '/';
       },
 
-      // Check if service is linked
-      isServiceLinked: (service) => {
-        const user = get().user;
-        return user?.linkedServices?.includes(service) || false;
-      },
-
-      // Update user data
       updateUser: (userData) => {
         set((state) => ({
           user: { ...state.user, ...userData }
