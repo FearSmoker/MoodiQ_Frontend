@@ -12,7 +12,7 @@ import About from './pages/public/About';
 import ShareView from './pages/public/ShareView';
 
 // Auth Pages
-import AuthCallback from './pages/auth/AuthCallback';
+import AuthCallback from './pages/auth/AuthCallBack.jsx';
 
 // Private/Protected Pages
 import Dashboard from './pages/private/Dashboard';
