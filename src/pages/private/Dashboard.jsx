@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { usePlaylistStore } from '../store/playlistStore';
+import { useAuthStore } from '../../store/authStore';
+import { usePlaylistStore } from '../../store/playlistStore';
 import { useSocket } from '../hooks/useSocket';
 import MoodLineChart from '../components/charts/MoodLineChart';
 import MoodCloud from '../components/charts/MoodCloud';
