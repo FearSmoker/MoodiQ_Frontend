@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { usePlaylistStore } from '../store/playlistStore';
-import { Button } from '../components/ui/Button';
+import { usePlaylistStore } from '../../store/playlistStore';
+import { Button } from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import { GripVertical, Save, Sparkles } from 'lucide-react';
 
