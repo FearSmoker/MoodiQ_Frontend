@@ -1,14 +1,21 @@
 import { useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 import toast from 'react-hot-toast';
 
 const Login = () => {
   const token = useAuthStore((state) => state.token);
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    // If already logged in, redirect to dashboard
+    if (token) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
     // Check for error parameters in URL
     const error = searchParams.get('error');
     const message = searchParams.get('message');
@@ -18,36 +25,50 @@ const Login = () => {
       
       switch(error) {
         case 'access_denied':
-          errorMessage = message || 'You cancelled the Spotify authorization. Please try again to use Moodify-AI.';
+          errorMessage = 'You cancelled the Spotify authorization. Please try again to use Moodify-AI.';
           break;
         case 'no_code':
-          errorMessage = message || 'No authorization code received from Spotify. Please try again.';
+          errorMessage = 'No authorization code received from Spotify. Please try again.';
           break;
         case 'auth_failed':
-          errorMessage = message || 'Authentication failed. Please try again.';
+          // Decode the message if it exists
+          if (message) {
+            try {
+              errorMessage = decodeURIComponent(message);
+            } catch (e) {
+              errorMessage = 'Authentication failed. Please try again.';
+            }
+          } else {
+            errorMessage = 'Authentication failed. Please try again.';
+          }
           break;
         case 'spotify_config_error':
           errorMessage = 'Server configuration error. Please contact support.';
           break;
         default:
-          errorMessage = message || 'An error occurred during login. Please try again.';
+          if (message) {
+            try {
+              errorMessage = decodeURIComponent(message);
+            } catch (e) {
+              errorMessage = 'An error occurred during login. Please try again.';
+            }
+          }
       }
       
       toast.error(errorMessage, { duration: 5000 });
       
-      // Clear the error from URL
-      window.history.replaceState({}, document.title, '/login');
+      // Clear the error from URL without triggering navigation
+      window.history.replaceState({}, '', '/login');
     }
-  }, [searchParams]);
-
-  if (token) {
-    return <Navigate to="/dashboard" />;
-  }
+  }, [searchParams, token, navigate]);
 
   const handleLogin = () => {
-    // VITE_API_URL = https://moodiq-backend.onrender.com/api
-    // We need: https://moodiq-backend.onrender.com/api/auth/login
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      toast.error('API URL not configured. Please check your environment settings.');
+      return;
+    }
+    
     const loginUrl = `${apiUrl}/auth/login`;
     console.log('Redirecting to:', loginUrl);
     window.location.href = loginUrl;

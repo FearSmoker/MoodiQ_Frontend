@@ -1,11 +1,17 @@
 import { Button } from '../ui/Button';
+import toast from 'react-hot-toast';
 
 const ReconnectButton = () => {
   const handleReconnect = () => {
-    // VITE_API_URL = https://moodiq-backend.onrender.com/api
-    // We need: https://moodiq-backend.onrender.com/api/auth/login
     const apiUrl = import.meta.env.VITE_API_URL;
+    
+    if (!apiUrl) {
+      toast.error('API URL not configured. Please check your environment settings.');
+      return;
+    }
+    
     const loginUrl = `${apiUrl}/auth/login`;
+    console.log('Reconnecting via:', loginUrl);
     window.location.href = loginUrl;
   };
 

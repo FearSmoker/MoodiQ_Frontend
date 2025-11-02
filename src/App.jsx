@@ -13,19 +13,26 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* Public Routes */}
+        <Route path="/login" element={token ? <Navigate to="/dashboard" /> : <Login />} />
         <Route path="/callback" element={<Callback />} />
         <Route path="/share/:shareId" element={<Share />} />
         
+        {/* Protected Routes */}
         <Route 
           path="/" 
-          element={token ? <Layout /> : <Navigate to="/login" />}
+          element={token ? <Layout /> : <Navigate to="/login" replace />}
         >
-          <Route index element={<Navigate to="/dashboard" />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="optimize" element={<Optimize />} />
-          {/* Add other protected routes here */}
         </Route>
+
+        {/* Catch all - redirect to login or dashboard */}
+        <Route 
+          path="*" 
+          element={<Navigate to={token ? "/dashboard" : "/login"} replace />} 
+        />
       </Routes>
     </BrowserRouter>
   );

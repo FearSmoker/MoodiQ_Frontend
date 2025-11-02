@@ -10,7 +10,6 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferStatus, setTransferStatus] = useState(null);
   const [linkedServices, setLinkedServices] = useState([]);
-  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     fetchLinkedServices();
@@ -26,9 +25,12 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
   };
 
   const handleLinkService = (service) => {
-    // VITE_API_URL = https://moodiq-backend.onrender.com/api
-    // We need: https://moodiq-backend.onrender.com/api/auth/youtube/auth
     const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      toast.error('API URL not configured');
+      return;
+    }
+    
     const authUrl = `${apiUrl}/auth/${service}/auth`;
     window.location.href = authUrl;
   };
