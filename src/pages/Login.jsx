@@ -2,8 +2,6 @@ import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
 const Login = () => {
   const token = useAuthStore((state) => state.token);
 
@@ -12,9 +10,12 @@ const Login = () => {
   }
 
   const handleLogin = () => {
-    // Remove /api from the URL since VITE_API_URL already includes it
-    const baseUrl = API_URL.replace('/api', '');
-    window.location.href = `${baseUrl}/api/auth/login`;
+    // VITE_API_URL = https://moodiq-backend.onrender.com/api
+    // We need: https://moodiq-backend.onrender.com/api/auth/login
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const loginUrl = `${apiUrl}/auth/login`;
+    console.log('Redirecting to:', loginUrl);
+    window.location.href = loginUrl;
   };
 
   return (
