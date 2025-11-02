@@ -270,7 +270,7 @@ const Dashboard = () => {
       {showTransferModal && moodData && (
         <TransferModal
           playlistTracks={moodData.tracks}
-          playlistName={moodData.playlistName || 'Moodify Mix'}
+          playlistName={moodData.playlistName || 'MoodiQ Mix'}
           onClose={() => setShowTransferModal(false)}
         />
       )}

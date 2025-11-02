@@ -30,7 +30,7 @@ const About = () => {
         {/* Hero Section */}
         <div className="max-w-4xl mx-auto text-center mb-20">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            About Moodify-AI
+            About MoodiQ-AI
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
             We're on a mission to help you understand the emotional landscape of your music collection and create the perfect soundtrack for every moment of your life.
@@ -43,13 +43,13 @@ const About = () => {
             <h2 className="text-3xl font-bold mb-6">Our Story</h2>
             <div className="prose prose-lg dark:prose-invert max-w-none">
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                Moodify-AI was born from a simple observation: music affects how we feel, but we rarely analyze why. We built this platform to bridge the gap between your playlists and your emotions.
+                MoodiQ-AI was born from a simple observation: music affects how we feel, but we rarely analyze why. We built this platform to bridge the gap between your playlists and your emotions.
               </p>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                 Using advanced machine learning and audio analysis, we decode the emotional DNA of your music—helping you discover patterns, optimize flows, and create playlists that match your mood perfectly.
               </p>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                Whether you're looking to energize your workout, focus during study sessions, or wind down after a long day, Moodify-AI ensures your music always hits the right emotional note.
+                Whether you're looking to energize your workout, focus during study sessions, or wind down after a long day, MoodiQ-AI ensures your music always hits the right emotional note.
               </p>
             </div>
           </div>
@@ -83,7 +83,7 @@ const About = () => {
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-xl">
             <h2 className="text-3xl font-bold mb-6">The Technology</h2>
             <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
-              Moodify-AI combines Spotify's rich audio feature data with custom machine learning models trained on thousands of songs. We analyze:
+              MoodiQ-AI combines Spotify's rich audio feature data with custom machine learning models trained on thousands of songs. We analyze:
             </p>
             <ul className="grid md:grid-cols-2 gap-4 mb-8">
               {[

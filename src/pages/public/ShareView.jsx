@@ -57,7 +57,7 @@ const Share = () => {
       <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-8 text-white">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <div className="text-sm opacity-80 mb-2">Shared Moodify Mix</div>
+            <div className="text-sm opacity-80 mb-2">Shared MoodiQ Mix</div>
             <h1 className="text-4xl font-bold mb-3">
               {playlist.playlistName || 'Untitled Playlist'}
             </h1>

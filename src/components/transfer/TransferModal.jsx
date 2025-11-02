@@ -55,7 +55,7 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
 
     try {
       const { data } = await api.post(`/transfer/${service}`, {
-        playlistName: playlistName || 'Moodify Mix',
+        playlistName: playlistName || 'MoodiQ Mix',
         tracks: tracksToTransfer,
       });
 
