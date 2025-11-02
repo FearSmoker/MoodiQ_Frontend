@@ -35,7 +35,4 @@ const MoodAnalyzer = () => {
   );
 };
 
-
-export {
-  MoodAnalyzer
-};
+export default MoodAnalyzer;

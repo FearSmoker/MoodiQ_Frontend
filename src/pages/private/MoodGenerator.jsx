@@ -55,6 +55,4 @@ const MoodGenerator = () => {
 };
 
 
-export {
-  MoodGenerator
-};
+export default MoodGenerator;

@@ -94,6 +94,4 @@ const PlaylistTransfer = () => {
 };
 
 
-export {
-  PlaylistTransfer
-};
+export default PlaylistTransfer;
