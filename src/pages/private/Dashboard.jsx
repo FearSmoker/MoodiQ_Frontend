@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { usePlaylistStore } from '../../store/playlistStore';
-import { useSocket } from '../hooks/useSocket';
-import MoodLineChart from '../components/charts/MoodLineChart';
-import MoodCloud from '../components/charts/MoodCloud';
-import { Loader } from '../components/ui/Loader';
-import TransferModal from '../components/transfer/TransferModal';
-import api from '../lib/api';
+import { useSocket } from '../../hooks/useSocket';
+import MoodLineChart from '../../components/charts/MoodLineChart';
+import MoodCloud from '../../components/charts/MoodCloud';
+import { Loader } from '../../components/ui/Loader';
+import TransferModal from '../../components/transfer/TransferModal';
+import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { Share2, Sparkles } from 'lucide-react';
 
