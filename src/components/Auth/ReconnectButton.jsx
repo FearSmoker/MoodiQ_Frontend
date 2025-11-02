@@ -1,11 +1,12 @@
 import { Button } from '../ui/Button';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const ReconnectButton = () => {
   const handleReconnect = () => {
-    // Re-run the full auth flow
-    window.location.href = `${API_URL}/auth/login`;
+    // Remove /api from the URL since VITE_API_URL already includes it
+    const baseUrl = API_URL.replace('/api', '');
+    window.location.href = `${baseUrl}/api/auth/login`;
   };
 
   return (

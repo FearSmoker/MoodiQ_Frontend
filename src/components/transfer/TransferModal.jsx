@@ -5,6 +5,8 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { X, ExternalLink, Music2, Apple } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
   const [service, setService] = useState('youtube');
   const [isTransferring, setIsTransferring] = useState(false);
@@ -26,8 +28,9 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
   };
 
   const handleLinkService = (service) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-    window.location.href = `${API_URL}/auth/${service}/auth`;
+    // Remove /api from the URL since VITE_API_URL already includes it
+    const baseUrl = API_URL.replace('/api', '');
+    window.location.href = `${baseUrl}/api/auth/${service}/auth`;
   };
 
   const handleTransfer = async () => {
