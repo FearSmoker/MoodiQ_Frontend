@@ -11,46 +11,59 @@ const AuthCallback = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        // Get token from URL
-        const token = searchParams.get('token');
-
-        if (!token) {
-          setStatus('error');
-          setError('No authentication token received');
-          setTimeout(() => navigate('/'), 3000);
-          return;
-        }
-
-        console.log('🔐 Processing authentication...');
-        setStatus('processing');
-
-        // Login with token (stores in localStorage and fetches user)
-        await login(token);
-
-        console.log('✅ Authentication successful');
-        setStatus('success');
-
-        // Wait a moment then redirect to dashboard
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 1000);
-
-      } catch (error) {
-        console.error('❌ Authentication failed:', error);
-        setStatus('error');
-        setError(error.message || 'Authentication failed');
-        
-        // Redirect to home after showing error
-        setTimeout(() => {
-          navigate('/', { replace: true });
-        }, 3000);
-      }
-    };
-
+    console.log('🔄 AuthCallback: Component mounted');
     handleCallback();
-  }, [searchParams, login, navigate]);
+  }, []);
+
+  const handleCallback = async () => {
+    try {
+      console.log('🔍 AuthCallback: Reading URL parameters...');
+      const token = searchParams.get('token');
+      console.log('Token found:', !!token);
+
+      if (!token) {
+        console.error('❌ AuthCallback: No token in URL');
+        setStatus('error');
+        setError('No authentication token received. Please try again.');
+        setTimeout(() => navigate('/'), 3000);
+        return;
+      }
+
+      console.log('🔐 AuthCallback: Token received (length:', token.length, ')');
+      console.log('Token preview:', token.substring(0, 20) + '...');
+      
+      setStatus('processing');
+      console.log('📞 AuthCallback: Calling login function...');
+
+      // Call login from AuthContext
+      await login(token);
+
+      console.log('✅ AuthCallback: Login successful');
+      setStatus('success');
+
+      // Wait a moment then redirect to dashboard
+      console.log('🔄 AuthCallback: Redirecting to dashboard in 1 second...');
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ AuthCallback: Error during callback:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      setStatus('error');
+      setError(error.message || 'Authentication failed. Please try again.');
+      
+      // Redirect to home after showing error
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 3000);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
@@ -64,8 +77,13 @@ const AuthCallback = () => {
             </div>
             <h2 className="text-2xl font-bold mb-3">Completing Sign In...</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Please wait while we set up your account
+              Setting up your account and preferences
             </p>
+            <div className="mt-6 space-y-2 text-sm text-gray-500 dark:text-gray-500">
+              <p>✓ Verifying credentials</p>
+              <p>✓ Loading your profile</p>
+              <p className="animate-pulse">• Preparing dashboard...</p>
+            </div>
           </div>
         )}
 
@@ -81,7 +99,7 @@ const AuthCallback = () => {
               Welcome to MoodiQ-AI!
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Redirecting to your dashboard...
+              Taking you to your dashboard...
             </p>
           </div>
         )}

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import api from '../lib/api';
+import { getCurrentUser } from '../api/auth';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -19,52 +19,74 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Initialize auth state
+  // Initialize auth state on mount
   useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem('auth_token');
-      
-      if (storedToken) {
-        try {
-          // Decode and validate JWT
-          const decoded = jwtDecode(storedToken);
-          
-          // Check if token is expired
-          if (decoded.exp * 1000 < Date.now()) {
-            console.log('Token expired, logging out');
-            handleLogout();
-            return;
-          }
-
-          // Token is valid, fetch user profile
-          setToken(storedToken);
-          await fetchUserProfile();
-          setIsAuthenticated(true);
-          
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          handleLogout();
-        }
-      }
-      
-      setLoading(false);
-    };
-
+    console.log('🔐 AuthContext: Initializing...');
     initAuth();
   }, []);
+
+  const initAuth = async () => {
+    const storedToken = localStorage.getItem('auth_token');
+    
+    console.log('🔍 AuthContext: Checking for stored token...');
+    console.log('Token exists:', !!storedToken);
+    
+    if (storedToken) {
+      try {
+        // Decode and validate JWT
+        console.log('🔓 AuthContext: Decoding JWT token...');
+        const decoded = jwtDecode(storedToken);
+        console.log('JWT decoded:', { id: decoded.id, exp: decoded.exp });
+        
+        // Check if token is expired
+        if (decoded.exp * 1000 < Date.now()) {
+          console.log('⚠️ AuthContext: Token expired');
+          handleLogout();
+          setLoading(false);
+          return;
+        }
+
+        console.log('✅ AuthContext: Token is valid');
+        
+        // Token is valid, fetch user profile
+        setToken(storedToken);
+        console.log('📋 AuthContext: Fetching user profile...');
+        
+        await fetchUserProfile();
+        setIsAuthenticated(true);
+        console.log('✅ AuthContext: User authenticated successfully');
+        
+      } catch (error) {
+        console.error('❌ AuthContext: Token validation failed:', error.message);
+        handleLogout();
+      }
+    } else {
+      console.log('ℹ️ AuthContext: No token found, user not authenticated');
+    }
+    
+    setLoading(false);
+  };
 
   // Fetch user profile from API
   const fetchUserProfile = async () => {
     try {
-      const { data } = await api.get('/auth/me');
-      setUser(data);
-      console.log('✅ User profile loaded:', data.displayName);
-      return data;
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
+      console.log('📞 AuthContext: Calling getCurrentUser API...');
+      const userData = await getCurrentUser();
       
+      console.log('✅ AuthContext: User data received:', {
+        id: userData._id,
+        name: userData.displayName,
+        email: userData.email,
+      });
+      
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.error('❌ AuthContext: Failed to fetch user profile:', error.message);
+      
+      // If API returns 401, token is invalid
       if (error.response?.status === 401) {
-        // Token is invalid, logout
+        console.log('🚪 AuthContext: Unauthorized, logging out...');
         handleLogout();
       }
       
@@ -75,28 +97,52 @@ export const AuthProvider = ({ children }) => {
   // Handle login with JWT token
   const handleLogin = async (newToken) => {
     try {
-      // Validate token
+      console.log('🔑 AuthContext: Handling login...');
+      console.log('Token received (first 20 chars):', newToken?.substring(0, 20) + '...');
+      
+      // Validate token format
+      if (!newToken || typeof newToken !== 'string') {
+        throw new Error('Invalid token format');
+      }
+
+      // Decode and validate token
+      console.log('🔓 AuthContext: Decoding JWT...');
       const decoded = jwtDecode(newToken);
+      console.log('JWT decoded:', { id: decoded.id, exp: decoded.exp });
       
       if (decoded.exp * 1000 < Date.now()) {
         throw new Error('Token expired');
       }
 
+      console.log('💾 AuthContext: Storing token in localStorage...');
       // Store token in localStorage
       localStorage.setItem('auth_token', newToken);
       setToken(newToken);
       
+      console.log('📋 AuthContext: Fetching user data...');
       // Fetch user data
       const userData = await fetchUserProfile();
       setIsAuthenticated(true);
       
-      console.log('✅ Login successful');
-      toast.success(`Welcome, ${userData.displayName}!`, { duration: 3000 });
+      console.log('✅ AuthContext: Login successful');
+      console.log('User logged in:', userData.displayName);
+      
+      // Show success message only once
+      toast.success(`Welcome back, ${userData.displayName}!`, { 
+        id: 'login-success',
+        duration: 3000 
+      });
       
       return userData;
     } catch (error) {
-      console.error('Login failed:', error);
-      toast.error('Login failed. Please try again.');
+      console.error('❌ AuthContext: Login failed:', error.message);
+      
+      // Show error only once
+      toast.error('Login failed. Please try again.', { 
+        id: 'login-error',
+        duration: 4000 
+      });
+      
       handleLogout();
       throw error;
     }
@@ -104,27 +150,34 @@ export const AuthProvider = ({ children }) => {
 
   // Handle logout
   const handleLogout = () => {
-    console.log('🚪 Logging out...');
+    console.log('🚪 AuthContext: Logging out...');
+    
     localStorage.removeItem('auth_token');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
     
+    console.log('✅ AuthContext: Logout complete');
+    
     // Redirect to home
     window.location.href = '/';
   };
 
-  // Update user data
+  // Update user data (without API call)
   const updateUser = (updates) => {
+    console.log('🔄 AuthContext: Updating user data:', Object.keys(updates));
     setUser(prev => ({ ...prev, ...updates }));
   };
 
   // Refresh user data from API
   const refreshUser = async () => {
     try {
-      return await fetchUserProfile();
+      console.log('🔄 AuthContext: Refreshing user data...');
+      const userData = await fetchUserProfile();
+      console.log('✅ AuthContext: User data refreshed');
+      return userData;
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      console.error('❌ AuthContext: Failed to refresh user:', error.message);
       throw error;
     }
   };

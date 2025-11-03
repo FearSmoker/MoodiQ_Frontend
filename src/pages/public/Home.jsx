@@ -7,60 +7,88 @@ const Home = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Handle authorization cancellation
+    // Only process error params once on mount
     const cancelled = searchParams.get('cancelled');
+    const error = searchParams.get('error');
+    const message = searchParams.get('message');
+    
+    console.log('🏠 Home: URL params:', { cancelled, error, message });
+
     if (cancelled === 'true') {
+      console.log('⚠️ Home: User cancelled authorization');
       toast.error('Authorization cancelled', {
+        id: 'auth-cancelled',
         duration: 4000,
-        icon: '🚫'
       });
       // Clear URL
       window.history.replaceState({}, document.title, '/');
       return;
     }
 
-    // Handle errors
-    const error = searchParams.get('error');
-    const message = searchParams.get('message');
-    
     if (error) {
+      console.log('❌ Home: Error in URL params:', error);
+      
       let errorMessage = 'An error occurred';
       
       try {
         errorMessage = message ? decodeURIComponent(message) : errorMessage;
       } catch (e) {
-        // If decode fails, use default message
+        console.error('Failed to decode error message:', e);
       }
 
-      // Only show specific error messages
-      switch(error) {
-        case 'auth_failed':
-          toast.error('Authentication failed. Please try again.', { duration: 5000 });
-          break;
-        case 'no_code':
-          toast.error('Authorization incomplete. Please try again.', { duration: 5000 });
-          break;
-        case 'config_error':
-          toast.error('Configuration error. Please contact support.', { duration: 5000 });
-          break;
-        default:
-          toast.error(errorMessage, { duration: 5000 });
-      }
+      // Map error codes to user-friendly messages
+      const errorMessages = {
+        'auth_failed': 'Authentication failed. Please try again.',
+        'no_code': 'Authorization incomplete. Please try logging in again.',
+        'config_error': 'Configuration error. Please contact support.',
+        'invalid_grant': 'Authorization expired. Please try again.',
+        'redirect_uri_mismatch': 'Configuration error. Please contact support.',
+        'invalid_request': 'Invalid request. Please try again.',
+        'invalid_credentials': 'Invalid credentials. Please try again.',
+      };
+
+      const displayMessage = errorMessages[error] || errorMessage;
       
-      // Clear URL
+      console.log('📢 Home: Showing error toast:', displayMessage);
+      
+      // Show error toast only once with unique ID
+      toast.error(displayMessage, { 
+        id: `auth-error-${error}`,
+        duration: 5000 
+      });
+      
+      // Clear URL params
       window.history.replaceState({}, document.title, '/');
     }
-  }, [searchParams]);
+  }, []); // Empty dependency array - only run once on mount
 
   const handleLogin = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
+    console.log('🔐 Home: Login button clicked');
+    console.log('API URL:', apiUrl);
+    
     if (!apiUrl) {
-      toast.error('Configuration error. Please contact support.');
+      console.error('❌ Home: API URL not configured');
+      toast.error('Configuration error. Please contact support.', {
+        id: 'config-error',
+        duration: 4000
+      });
       return;
     }
     
-    console.log('🔐 Redirecting to Spotify login...');
-    window.location.href = `${apiUrl}/auth/login`;
+    const loginUrl = `${apiUrl}/auth/login`;
+    console.log('🔄 Home: Redirecting to:', loginUrl);
+    
+    // Show loading toast
+    toast.loading('Redirecting to Spotify...', {
+      id: 'login-redirect',
+      duration: 2000
+    });
+    
+    // Redirect after a brief moment
+    setTimeout(() => {
+      window.location.href = loginUrl;
+    }, 500);
   };
 
   const features = [
