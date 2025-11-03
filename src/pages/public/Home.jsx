@@ -1,39 +1,53 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Music, Sparkles, Zap, Heart, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { Music, Sparkles, Zap, Heart, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Home = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check for cancellation
+    // Handle authorization cancellation
     const cancelled = searchParams.get('cancelled');
     if (cancelled === 'true') {
-      toast.error('Authorization cancelled. Please try again if you want to use MoodiQ-AI.', {
-        duration: 5000,
+      toast.error('Authorization cancelled', {
+        duration: 4000,
         icon: '🚫'
       });
-      // Clear the URL parameter
+      // Clear URL
       window.history.replaceState({}, document.title, '/');
+      return;
     }
 
-    // Check for errors
+    // Handle errors
     const error = searchParams.get('error');
     const message = searchParams.get('message');
     
     if (error) {
-      let errorMessage = 'An error occurred during authentication';
+      let errorMessage = 'An error occurred';
       
       try {
         errorMessage = message ? decodeURIComponent(message) : errorMessage;
       } catch (e) {
-        errorMessage = 'Authentication failed. Please try again.';
+        // If decode fails, use default message
+      }
+
+      // Only show specific error messages
+      switch(error) {
+        case 'auth_failed':
+          toast.error('Authentication failed. Please try again.', { duration: 5000 });
+          break;
+        case 'no_code':
+          toast.error('Authorization incomplete. Please try again.', { duration: 5000 });
+          break;
+        case 'config_error':
+          toast.error('Configuration error. Please contact support.', { duration: 5000 });
+          break;
+        default:
+          toast.error(errorMessage, { duration: 5000 });
       }
       
-      toast.error(errorMessage, { duration: 5000 });
-      
-      // Clear URL parameters
+      // Clear URL
       window.history.replaceState({}, document.title, '/');
     }
   }, [searchParams]);
@@ -41,15 +55,11 @@ const Home = () => {
   const handleLogin = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     if (!apiUrl) {
-      console.error('API URL not configured');
       toast.error('Configuration error. Please contact support.');
       return;
     }
     
-    // Show info message about authorization
-    toast.loading('Redirecting to Spotify...', { duration: 2000 });
-    
-    // Redirect to Spotify login
+    console.log('🔐 Redirecting to Spotify login...');
     window.location.href = `${apiUrl}/auth/login`;
   };
 
@@ -120,21 +130,6 @@ const Home = () => {
               >
                 Explore Features
               </Link>
-            </div>
-
-            {/* Authorization Info */}
-            <div className="mt-8 max-w-md mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-sm text-white/80">
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <div className="text-left">
-                    <p className="font-medium mb-1">Secure Spotify Authorization</p>
-                    <p className="text-xs">
-                      We'll redirect you to Spotify to authorize access. You can cancel anytime, and we only read your playlists - we never modify anything without your permission.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Stats */}
@@ -209,7 +204,7 @@ const Home = () => {
                 {
                   step: '01',
                   title: 'Connect Your Spotify',
-                  description: 'Log in securely with your Spotify account. We only access your playlists and music data - nothing more.',
+                  description: 'Log in securely with your Spotify account. We only access your playlists and music data.',
                 },
                 {
                   step: '02',

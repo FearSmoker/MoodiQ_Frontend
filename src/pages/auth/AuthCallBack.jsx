@@ -1,73 +1,48 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 const AuthCallback = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
-  const [status, setStatus] = useState('processing'); // processing, success, error
+  const [status, setStatus] = useState('processing');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Get token from URL
-      const token = searchParams.get('token');
-      const error = searchParams.get('error');
-      const message = searchParams.get('message');
+      try {
+        // Get token from URL
+        const token = searchParams.get('token');
 
-      // Handle errors
-      if (error) {
-        setStatus('error');
-        let errorMessage = 'Authentication failed';
-        
-        try {
-          errorMessage = message ? decodeURIComponent(message) : errorMessage;
-        } catch (e) {
-          errorMessage = 'Authentication failed. Please try again.';
+        if (!token) {
+          setStatus('error');
+          setError('No authentication token received');
+          setTimeout(() => navigate('/'), 3000);
+          return;
         }
 
-        toast.error(errorMessage, { duration: 5000 });
-        
-        // Redirect to home after 3 seconds
-        setTimeout(() => {
-          navigate('/', { replace: true });
-        }, 3000);
-        return;
-      }
-
-      // Handle missing token
-      if (!token) {
-        setStatus('error');
-        toast.error('No authentication token received');
-        
-        setTimeout(() => {
-          navigate('/', { replace: true });
-        }, 3000);
-        return;
-      }
-
-      // Process successful authentication
-      try {
+        console.log('🔐 Processing authentication...');
         setStatus('processing');
+
+        // Login with token (stores in localStorage and fetches user)
         await login(token);
+
+        console.log('✅ Authentication successful');
         setStatus('success');
 
-        // Check if there's a pre-auth URL to return to
-        const preAuthUrl = sessionStorage.getItem('preAuthUrl');
-        sessionStorage.removeItem('preAuthUrl');
-
-        // Wait a moment to show success state
+        // Wait a moment then redirect to dashboard
         setTimeout(() => {
-          navigate(preAuthUrl || '/dashboard', { replace: true });
-        }, 1500);
+          navigate('/dashboard', { replace: true });
+        }, 1000);
+
       } catch (error) {
-        console.error('Login failed:', error);
+        console.error('❌ Authentication failed:', error);
         setStatus('error');
-        toast.error('Failed to complete authentication');
+        setError(error.message || 'Authentication failed');
         
+        // Redirect to home after showing error
         setTimeout(() => {
           navigate('/', { replace: true });
         }, 3000);
@@ -75,20 +50,21 @@ const AuthCallback = () => {
     };
 
     handleCallback();
-  }, [location, navigate, login, searchParams]);
+  }, [searchParams, login, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-12 max-w-md w-full mx-4">
+        
         {/* Processing State */}
         {status === 'processing' && (
           <div className="text-center">
             <div className="mb-6 flex justify-center">
               <Loader2 className="w-16 h-16 text-indigo-600 animate-spin" />
             </div>
-            <h2 className="text-2xl font-bold mb-3">Authenticating...</h2>
+            <h2 className="text-2xl font-bold mb-3">Completing Sign In...</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Please wait while we complete your authentication
+              Please wait while we set up your account
             </p>
           </div>
         )}
@@ -102,10 +78,10 @@ const AuthCallback = () => {
               </div>
             </div>
             <h2 className="text-2xl font-bold mb-3 text-green-600 dark:text-green-400">
-              Success!
+              Welcome to MoodiQ-AI!
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Authentication completed. Redirecting to your dashboard...
+              Redirecting to your dashboard...
             </p>
           </div>
         )}
@@ -122,7 +98,7 @@ const AuthCallback = () => {
               Authentication Failed
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              We couldn't complete your authentication. Please try again.
+              {error || 'Something went wrong. Please try again.'}
             </p>
             <button
               onClick={() => navigate('/', { replace: true })}

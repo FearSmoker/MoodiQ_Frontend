@@ -26,17 +26,21 @@ export const AuthProvider = ({ children }) => {
       
       if (storedToken) {
         try {
+          // Decode and validate JWT
           const decoded = jwtDecode(storedToken);
           
           // Check if token is expired
           if (decoded.exp * 1000 < Date.now()) {
+            console.log('Token expired, logging out');
             handleLogout();
             return;
           }
 
+          // Token is valid, fetch user profile
           setToken(storedToken);
           await fetchUserProfile();
           setIsAuthenticated(true);
+          
         } catch (error) {
           console.error('Token validation failed:', error);
           handleLogout();
@@ -49,51 +53,64 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // Fetch user profile
+  // Fetch user profile from API
   const fetchUserProfile = async () => {
     try {
       const { data } = await api.get('/auth/me');
       setUser(data);
+      console.log('✅ User profile loaded:', data.displayName);
       return data;
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
+      
       if (error.response?.status === 401) {
+        // Token is invalid, logout
         handleLogout();
       }
+      
       throw error;
     }
   };
 
-  // Handle login with token
+  // Handle login with JWT token
   const handleLogin = async (newToken) => {
     try {
+      // Validate token
       const decoded = jwtDecode(newToken);
       
       if (decoded.exp * 1000 < Date.now()) {
         throw new Error('Token expired');
       }
 
+      // Store token in localStorage
       localStorage.setItem('auth_token', newToken);
       setToken(newToken);
       
+      // Fetch user data
       const userData = await fetchUserProfile();
       setIsAuthenticated(true);
       
-      toast.success(`Welcome back, ${userData.displayName}!`);
+      console.log('✅ Login successful');
+      toast.success(`Welcome, ${userData.displayName}!`, { duration: 3000 });
+      
       return userData;
     } catch (error) {
       console.error('Login failed:', error);
       toast.error('Login failed. Please try again.');
+      handleLogout();
       throw error;
     }
   };
 
   // Handle logout
   const handleLogout = () => {
+    console.log('🚪 Logging out...');
     localStorage.removeItem('auth_token');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
+    
+    // Redirect to home
     window.location.href = '/';
   };
 
@@ -102,7 +119,7 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => ({ ...prev, ...updates }));
   };
 
-  // Refresh user data
+  // Refresh user data from API
   const refreshUser = async () => {
     try {
       return await fetchUserProfile();

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import toast from 'react-hot-toast';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -24,15 +23,15 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle errors
+// Response interceptor - handle errors WITHOUT showing toasts
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle network errors
+    // Handle network errors silently
     if (!error.response) {
-      toast.error('Network error. Please check your connection.');
+      console.error('Network error - no response from server');
       return Promise.reject(error);
     }
 
@@ -43,68 +42,54 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Get refresh token from local storage or user data
-        const userDataStr = localStorage.getItem('auth_user');
-        const userData = userDataStr ? JSON.parse(userDataStr) : null;
-        const refreshToken = userData?.refreshToken;
-        
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
+        // Get user data from localStorage
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          throw new Error('No token available');
         }
 
-        // Refresh the Spotify token
-        const { data: refreshData } = await axios.post(
-          `${import.meta.env.VITE_API_URL}/auth/refresh`,
-          { refreshToken }
-        );
-
-        // Token refreshed successfully on backend
-        // Retry the original request
+        // Note: The backend handles refresh automatically
+        // Just retry the original request
         return api(originalRequest);
+        
       } catch (refreshError) {
-        toast.error('Session expired. Please login again.');
+        console.error('Token refresh failed:', refreshError);
+        // Clear auth data
         localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
+        // Redirect to login
         window.location.href = '/';
         return Promise.reject(refreshError);
       }
     }
 
-    // Handle JWT expiry
+    // Handle JWT expiry or invalid token
     if (data?.code === 'JWT_EXPIRED' || data?.code === 'INVALID_TOKEN') {
-      toast.error('Session expired. Please login again.');
+      console.log('Session expired - redirecting to login');
       localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
       window.location.href = '/';
       return Promise.reject(error);
     }
 
-    // Handle unauthorized
-    if (status === 401) {
-      if (data?.code === 'NO_TOKEN') {
-        toast.error('Please login to continue.');
-      } else if (data?.code === 'USER_NOT_FOUND') {
-        toast.error('User not found. Please login again.');
-      }
+    // Handle unauthorized (no token)
+    if (status === 401 && data?.code === 'NO_TOKEN') {
+      console.log('No authentication token - redirecting to login');
       localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
       window.location.href = '/';
       return Promise.reject(error);
     }
 
-    // Handle other errors
-    const errorMessage = data?.message || 'An error occurred';
+    // Handle user not found
+    if (data?.code === 'USER_NOT_FOUND') {
+      console.log('User not found - redirecting to login');
+      localStorage.removeItem('auth_token');
+      window.location.href = '/';
+      return Promise.reject(error);
+    }
+
+    // For all other errors, just log and reject
+    // Components will handle showing appropriate messages
+    console.error('API Error:', status, data?.message || error.message);
     
-    if (status >= 500) {
-      toast.error(`Server error: ${errorMessage}`);
-    } else if (status === 404) {
-      toast.error('Resource not found');
-    } else if (status === 400) {
-      toast.error(errorMessage);
-    } else {
-      toast.error(errorMessage);
-    }
-
     return Promise.reject(error);
   }
 );
