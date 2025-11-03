@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { usePlaylistStore } from '../../store/playlistStore';
+import { optimizePlaylistFlow, reorderPlaylist, detectMoodGaps, fillMoodGaps } from '../../api/playlists';
 import { Button } from '../../components/ui/Button';
 import toast from 'react-hot-toast';
-import { GripVertical, Save, Sparkles } from 'lucide-react';
+import { GripVertical, Save, Sparkles, Zap, AlertTriangle, Plus } from 'lucide-react';
 
 const MOOD_MAP = {
   'Calm': { valence: 0.3, energy: 0.2 },
@@ -13,14 +13,15 @@ const MOOD_MAP = {
   'Energetic': { valence: 0.7, energy: 0.9 },
   'Angry': { valence: 0.3, energy: 0.8 },
   'Relaxed': { valence: 0.6, energy: 0.3 },
+  'Romantic': { valence: 0.7, energy: 0.4 },
+  'Focus': { valence: 0.5, energy: 0.5 },
 };
 
 const MOOD_OPTIONS = Object.keys(MOOD_MAP);
 
-const Optimize = () => {
+const FlowOptimizer = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { optimizeFlow, reorderPlaylist } = usePlaylistStore();
   
   const initialTracks = location.state?.tracks || [];
   const playlistId = location.state?.playlistId;
@@ -29,8 +30,12 @@ const Optimize = () => {
   const [tracks, setTracks] = useState(initialTracks);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDetectingGaps, setIsDetectingGaps] = useState(false);
+  const [isFillingGaps, setIsFillingGaps] = useState(false);
   const [startMood, setStartMood] = useState('Calm');
   const [endMood, setEndMood] = useState('Happy');
+  const [moodGaps, setMoodGaps] = useState(null);
+  const [gapRecommendations, setGapRecommendations] = useState(null);
 
   if (!tracks.length) {
     return (
@@ -64,21 +69,71 @@ const Optimize = () => {
     setIsOptimizing(true);
 
     try {
-      const result = await optimizeFlow(
+      console.log('⚡ Optimizing playlist flow...');
+      const result = await optimizePlaylistFlow(
         tracks,
-        MOOD_MAP[startMood],
-        MOOD_MAP[endMood]
+        startMood,
+        endMood,
+        'dynamic_programming'
       );
 
       // Backend returns optimized order
       if (result.optimizedOrder) {
         const optimizedTracks = result.optimizedOrder.map(index => tracks[index]);
         setTracks(optimizedTracks);
+        toast.success(`Flow optimized! Score: ${result.flowScore?.toFixed(2) || 'N/A'}`);
+      } else if (result.tracks) {
+        // Alternative response format
+        setTracks(result.tracks);
+        toast.success('Flow optimized successfully!');
       }
     } catch (err) {
       console.error('Optimization failed:', err);
+      toast.error(err.response?.data?.message || 'Failed to optimize flow');
     } finally {
       setIsOptimizing(false);
+    }
+  };
+
+  const handleDetectGaps = async () => {
+    setIsDetectingGaps(true);
+
+    try {
+      console.log('🔍 Detecting mood gaps...');
+      const result = await detectMoodGaps(tracks, 1.5);
+      setMoodGaps(result);
+      
+      if (result.gaps && result.gaps.length > 0) {
+        toast.success(`Found ${result.gaps.length} mood gaps!`);
+      } else {
+        toast.info('No significant mood gaps detected');
+      }
+    } catch (err) {
+      console.error('Gap detection failed:', err);
+      toast.error('Failed to detect mood gaps');
+    } finally {
+      setIsDetectingGaps(false);
+    }
+  };
+
+  const handleFillGaps = async () => {
+    setIsFillingGaps(true);
+
+    try {
+      console.log('🎵 Filling mood gaps...');
+      const result = await fillMoodGaps(tracks);
+      setGapRecommendations(result);
+      
+      if (result.recommendations && result.recommendations.length > 0) {
+        toast.success(`Found ${result.recommendations.length} recommendations!`);
+      } else {
+        toast.info('No gap-filling recommendations available');
+      }
+    } catch (err) {
+      console.error('Gap filling failed:', err);
+      toast.error('Failed to fill mood gaps');
+    } finally {
+      setIsFillingGaps(false);
     }
   };
 
@@ -96,23 +151,50 @@ const Optimize = () => {
       toast.success('Playlist updated on Spotify!');
     } catch (err) {
       console.error('Failed to save:', err);
+      toast.error('Failed to save to Spotify');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleAddGapRecommendation = (recommendation, gapIndex) => {
+    if (!recommendation?.track?.id) return;
+
+    const newTracks = [...tracks];
+    const insertPosition = gapIndex + 1;
+    
+    const newTrack = {
+      id: recommendation.track.id,
+      name: recommendation.track.name,
+      artists: recommendation.track.artists,
+      mood: recommendation.targetMood || 'Unknown',
+      features: recommendation.track.audioFeatures || {}
+    };
+
+    newTracks.splice(insertPosition, 0, newTrack);
+    setTracks(newTracks);
+    toast.success(`Added "${newTrack.name}" to playlist`);
+  };
+
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Optimize: {playlistName}</h1>
+        <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
+          <Sparkles className="w-8 h-8 text-purple-600" />
+          Flow Optimizer: {playlistName}
+        </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Drag and drop to reorder manually, or use AI to create the perfect mood arc.
         </p>
       </div>
 
       {/* Mood Selection */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow mb-6">
-        <h2 className="text-xl font-semibold mb-4">Mood Journey</h2>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Zap className="w-6 h-6 text-indigo-600" />
+          Mood Journey
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="startMood" className="block text-sm font-medium mb-2">
@@ -146,7 +228,7 @@ const Optimize = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 mt-4">
+        <div className="flex flex-wrap gap-3 mt-6">
           <Button 
             onClick={handleOptimize} 
             isLoading={isOptimizing}
@@ -154,6 +236,27 @@ const Optimize = () => {
           >
             <Sparkles size={18} />
             Optimize with AI
+          </Button>
+
+          <Button 
+            onClick={handleDetectGaps}
+            isLoading={isDetectingGaps}
+            variant="secondary"
+            className="flex items-center gap-2"
+          >
+            <AlertTriangle size={18} />
+            Detect Gaps
+          </Button>
+
+          <Button 
+            onClick={handleFillGaps}
+            isLoading={isFillingGaps}
+            variant="secondary"
+            className="flex items-center gap-2"
+            disabled={!moodGaps || moodGaps.gaps?.length === 0}
+          >
+            <Plus size={18} />
+            Fill Gaps
           </Button>
           
           {playlistId && (
@@ -170,8 +273,73 @@ const Optimize = () => {
         </div>
       </div>
 
+      {/* Mood Gaps Display */}
+      {moodGaps && moodGaps.gaps && moodGaps.gaps.length > 0 && (
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-6">
+          <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-orange-600" />
+            Detected Mood Gaps ({moodGaps.gaps.length})
+          </h3>
+          <div className="space-y-2">
+            {moodGaps.gaps.map((gap, index) => (
+              <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">
+                      Gap between tracks {gap.fromIndex + 1} and {gap.toIndex + 1}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Mood jump: {gap.fromMood} → {gap.toMood} (Distance: {gap.distance?.toFixed(2)})
+                    </p>
+                  </div>
+                  <span className="text-2xl">{gap.severity === 'high' ? '🔴' : gap.severity === 'medium' ? '🟡' : '🟢'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gap Recommendations */}
+      {gapRecommendations && gapRecommendations.recommendations && gapRecommendations.recommendations.length > 0 && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+          <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <Plus className="w-5 h-5 text-green-600" />
+            Recommended Gap Fillers ({gapRecommendations.recommendations.length})
+          </h3>
+          <div className="space-y-3">
+            {gapRecommendations.recommendations.map((rec, index) => (
+              <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center gap-4">
+                {rec.track?.album?.images?.[0]?.url && (
+                  <img
+                    src={rec.track.album.images[0].url}
+                    alt={rec.track.name}
+                    className="w-16 h-16 rounded"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{rec.track?.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {rec.track?.artists?.map(a => a.name).join(', ')}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    For gap at position {rec.gapIndex + 1} • Target: {rec.targetMood}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleAddGapRecommendation(rec, rec.gapIndex)}
+                >
+                  <Plus size={16} />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Track List with Drag & Drop */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
         <h2 className="text-xl font-semibold mb-4">
           Track Order ({tracks.length} tracks)
         </h2>
@@ -180,7 +348,7 @@ const Optimize = () => {
           <Droppable droppableId="tracks">
             {(provided, snapshot) => (
               <div
-                className={`space-y-2 ${snapshot.isDraggingOver ? 'bg-indigo-50 dark:bg-indigo-900/10' : ''}`}
+                className={`space-y-2 ${snapshot.isDraggingOver ? 'bg-indigo-50 dark:bg-indigo-900/10 rounded-lg p-2' : ''}`}
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >
@@ -201,7 +369,7 @@ const Optimize = () => {
                       >
                         <GripVertical size={20} className="text-gray-400 flex-shrink-0" />
                         
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center font-semibold text-indigo-600 dark:text-indigo-300">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center font-semibold text-indigo-600 dark:text-indigo-300">
                           {index + 1}
                         </div>
 
@@ -222,11 +390,11 @@ const Optimize = () => {
 
                         {track.features && (
                           <div className="hidden md:flex gap-2 text-xs">
-                            <span className="text-gray-500">
-                              Energy: {(track.features.energy * 100).toFixed(0)}%
+                            <span className="text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                              E: {(track.features.energy * 100).toFixed(0)}%
                             </span>
-                            <span className="text-gray-500">
-                              Valence: {(track.features.valence * 100).toFixed(0)}%
+                            <span className="text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                              V: {(track.features.valence * 100).toFixed(0)}%
                             </span>
                           </div>
                         )}
@@ -239,6 +407,17 @@ const Optimize = () => {
             )}
           </Droppable>
         </DragDropContext>
+      </div>
+
+      {/* Info Box */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-6">
+        <h3 className="font-bold mb-2">💡 How it works</h3>
+        <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li>• <strong>Optimize with AI:</strong> Reorders tracks for smooth mood transitions</li>
+          <li>• <strong>Detect Gaps:</strong> Finds abrupt mood changes that might feel jarring</li>
+          <li>• <strong>Fill Gaps:</strong> Suggests tracks to bridge mood transitions</li>
+          <li>• <strong>Manual Reorder:</strong> Drag and drop tracks to customize the order</li>
+        </ul>
       </div>
     </div>
   );
@@ -258,9 +437,13 @@ const getMoodColor = (mood) => {
     return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
   } else if (moodLower.includes('angry') || moodLower.includes('aggressive')) {
     return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+  } else if (moodLower.includes('romantic')) {
+    return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
+  } else if (moodLower.includes('focus')) {
+    return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
   } else {
     return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
   }
 };
 
-export default Optimize;
+export default FlowOptimizer;

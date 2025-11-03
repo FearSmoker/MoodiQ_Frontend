@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { 
-  Music, Sparkles, Activity, TrendingUp, Clock, 
-  Heart, Share2, Play, Pause, BarChart3, Users,
-  Calendar, Radio, Target, Zap, Eye, ArrowRight
+  Music, Sparkles, Activity, TrendingUp, 
+  Heart, Share2, Eye, ArrowRight, Zap, Target, BarChart3
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { 
   getDashboardOverview, 
   getNowPlaying, 
-  getMoodTrends,
-  analyzePlaylistMood,
-  sharePlaylist
-} from '../../api/dashboard';
+  getMoodTrends 
+} from '../../api/analytics';
+import { getPlaylistMood } from '../../api/playlists';
+import { sharePlaylist } from '../../api/user';
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
@@ -77,7 +76,6 @@ const Dashboard = () => {
     } catch (error) {
       console.error('❌ Dashboard: Failed to load:', error);
       
-      // Don't show error toast if it's just a token issue - handled by interceptor
       if (!error.response || error.response.status !== 401) {
         toast.error('Failed to load dashboard data', { id: 'dashboard-error' });
       }
@@ -91,7 +89,6 @@ const Dashboard = () => {
       const playing = await getNowPlaying();
       setNowPlaying(playing);
     } catch (error) {
-      // Silently fail - not critical
       console.log('Could not fetch now playing');
     }
   };
@@ -102,7 +99,7 @@ const Dashboard = () => {
     
     try {
       console.log('🎵 Analyzing playlist:', playlist.name);
-      const moodData = await analyzePlaylistMood(playlist.id);
+      const moodData = await getPlaylistMood(playlist.id);
       setAnalyzedMood(moodData);
       console.log('✅ Playlist analyzed');
     } catch (error) {
@@ -159,7 +156,7 @@ const Dashboard = () => {
     );
   }
 
-  const { user, stats, playlists, topArtists, topTracks, recentActivity, topGenres, listeningPatterns } = dashboardData;
+  const { user, stats, playlists, topArtists, topTracks, topGenres } = dashboardData;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
@@ -189,250 +186,32 @@ const Dashboard = () => {
       </div>
 
       {/* Now Playing */}
-      {nowPlaying?.isPlaying && (
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <Radio className="w-5 h-5 animate-pulse" />
-            <span className="font-semibold">Now Playing</span>
-          </div>
-          <div className="flex items-center gap-4">
-            {nowPlaying.track.album.images?.[0]?.url && (
-              <img 
-                src={nowPlaying.track.album.images[0].url} 
-                alt={nowPlaying.track.album.name}
-                className="w-20 h-20 rounded-lg shadow-lg"
-              />
-            )}
-            <div className="flex-1">
-              <h3 className="text-xl font-bold mb-1">{nowPlaying.track.name}</h3>
-              <p className="text-white/80">
-                {nowPlaying.track.artists.map(a => a.name).join(', ')}
-              </p>
-              <div className="mt-2 flex items-center gap-3">
-                {nowPlaying.mood && (
-                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
-                    🎭 {nowPlaying.mood}
-                  </span>
-                )}
-                {nowPlaying.device && (
-                  <span className="text-sm text-white/60">
-                    Playing on {nowPlaying.device.name}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          {nowPlaying.progressPercentage && (
-            <div className="mt-4 bg-white/20 rounded-full h-1">
-              <div 
-                className="bg-white h-1 rounded-full transition-all"
-                style={{ width: `${nowPlaying.progressPercentage}%` }}
-              />
-            </div>
-          )}
-        </div>
+      {nowPlaying?.isPlaying && nowPlaying.track && (
+        <NowPlayingCard nowPlaying={nowPlaying} />
       )}
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Playlists */}
-        <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Music className="w-5 h-5 text-indigo-600" />
-              Your Playlists
-            </h2>
-            <span className="text-sm text-gray-500">{playlists.length}</span>
-          </div>
-          
-          <div className="space-y-2 max-h-[600px] overflow-y-auto">
-            {playlists.map(playlist => (
-              <button
-                key={playlist.id}
-                onClick={() => handlePlaylistSelect(playlist)}
-                className={`w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left ${
-                  selectedPlaylist?.id === playlist.id 
-                    ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500' 
-                    : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {playlist.images?.[0]?.url ? (
-                    <img 
-                      src={playlist.images[0].url} 
-                      alt={playlist.name}
-                      className="w-12 h-12 rounded"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
-                      <Music className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{playlist.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {playlist.tracksCount} tracks
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+        <PlaylistsSection 
+          playlists={playlists}
+          selectedPlaylist={selectedPlaylist}
+          onSelectPlaylist={handlePlaylistSelect}
+        />
 
         {/* Mood Analysis */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
-              Mood Analysis
-            </h2>
-            {analyzedMood && (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
-                <Link
-                  to="/optimize"
-                  state={{ 
-                    tracks: analyzedMood.tracks,
-                    playlistId: selectedPlaylist.id,
-                    playlistName: selectedPlaylist.name 
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-                >
-                  <Zap className="w-4 h-4" />
-                  Optimize
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {analyzing && (
-            <div className="flex flex-col items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Analyzing playlist mood...</p>
-            </div>
-          )}
-
-          {!analyzing && !analyzedMood && (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              <Sparkles className="w-16 h-16 mb-4 opacity-50" />
-              <p className="text-lg">Select a playlist to analyze its mood</p>
-              <p className="text-sm mt-2 text-gray-400">AI-powered emotional analysis</p>
-            </div>
-          )}
-
-          {analyzedMood && (
-            <div className="space-y-6">
-              {/* Overall Mood */}
-              <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg">
-                <h3 className="font-semibold mb-2">Overall Mood</h3>
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {analyzedMood.overallMood}
-                </p>
-              </div>
-
-              {/* Mood Distribution */}
-              {analyzedMood.moodDistribution && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold">Mood Distribution</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(analyzedMood.moodDistribution).map(([mood, count]) => (
-                      <div
-                        key={mood}
-                        className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-sm font-medium"
-                      >
-                        {mood}: {count}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Track List */}
-              <div className="space-y-2">
-                <h3 className="font-semibold">Track Moods</h3>
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {analyzedMood.tracks.slice(0, 10).map((track, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-gray-700"
-                    >
-                      <span className="text-sm truncate flex-1">{track.name}</span>
-                      <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded ml-2">
-                        {track.mood}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <MoodAnalysisSection
+          analyzing={analyzing}
+          analyzedMood={analyzedMood}
+          selectedPlaylist={selectedPlaylist}
+          onShare={handleShare}
+        />
       </div>
 
       {/* Top Artists & Tracks */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Top Artists */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5 text-green-600" />
-            Top Artists
-          </h2>
-          <div className="space-y-3">
-            {topArtists.slice(0, 5).map((artist, index) => (
-              <div key={artist.id} className="flex items-center gap-3">
-                <span className="text-lg font-bold text-gray-400 w-6">#{index + 1}</span>
-                {artist.images?.[0]?.url && (
-                  <img 
-                    src={artist.images[0].url} 
-                    alt={artist.name}
-                    className="w-12 h-12 rounded-full"
-                  />
-                )}
-                <div className="flex-1">
-                  <div className="font-medium">{artist.name}</div>
-                  <div className="text-sm text-gray-500">
-                    {artist.genres.slice(0, 2).join(', ')}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Tracks */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-pink-600" />
-            Top Tracks
-          </h2>
-          <div className="space-y-3">
-            {topTracks.slice(0, 5).map((track, index) => (
-              <div key={track.id} className="flex items-center gap-3">
-                <span className="text-lg font-bold text-gray-400 w-6">#{index + 1}</span>
-                {track.album.images?.[0]?.url && (
-                  <img 
-                    src={track.album.images[0].url} 
-                    alt={track.album.name}
-                    className="w-12 h-12 rounded"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{track.name}</div>
-                  <div className="text-sm text-gray-500 truncate">
-                    {track.artists.map(a => a.name).join(', ')}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TopArtistsSection artists={topArtists} />
+        <TopTracksSection tracks={topTracks} />
       </div>
 
       {/* Quick Actions */}
@@ -448,7 +227,7 @@ const Dashboard = () => {
           icon={Activity}
           title="Analytics"
           description="Detailed listening insights"
-          to="/analytics"
+          to="/realtime"
           color="blue"
         />
         <QuickActionCard 
@@ -462,7 +241,7 @@ const Dashboard = () => {
           icon={BarChart3}
           title="Flow Optimizer"
           description="Perfect transitions"
-          to="/optimize"
+          to="/flow-optimizer"
           color="pink"
         />
       </div>
@@ -470,7 +249,7 @@ const Dashboard = () => {
   );
 };
 
-// Stat Card Component
+// Sub-components
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const colors = {
     indigo: 'from-indigo-500 to-purple-500',
@@ -482,13 +261,253 @@ const StatCard = ({ icon: Icon, label, value, color }) => {
   return (
     <div className={`bg-gradient-to-br ${colors[color]} rounded-xl p-4 text-white shadow-lg`}>
       <Icon className="w-6 h-6 mb-2 opacity-80" />
-      <div className="text-3xl font-bold mb-1">{value.toLocaleString()}</div>
+      <div className="text-3xl font-bold mb-1">{value?.toLocaleString() || 0}</div>
       <div className="text-sm opacity-90">{label}</div>
     </div>
   );
 };
 
-// Quick Action Card Component
+const NowPlayingCard = ({ nowPlaying }) => (
+  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+    <div className="flex items-center gap-2 mb-3">
+      <Music className="w-5 h-5 animate-pulse" />
+      <span className="font-semibold">Now Playing</span>
+    </div>
+    <div className="flex items-center gap-4">
+      {nowPlaying.track.album?.images?.[0]?.url && (
+        <img 
+          src={nowPlaying.track.album.images[0].url} 
+          alt={nowPlaying.track.album.name}
+          className="w-20 h-20 rounded-lg shadow-lg"
+        />
+      )}
+      <div className="flex-1">
+        <h3 className="text-xl font-bold mb-1">{nowPlaying.track.name}</h3>
+        <p className="text-white/80">
+          {nowPlaying.track.artists.map(a => a.name).join(', ')}
+        </p>
+        <div className="mt-2 flex items-center gap-3">
+          {nowPlaying.mood?.mood && (
+            <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
+              🎭 {nowPlaying.mood.mood}
+            </span>
+          )}
+          {nowPlaying.device?.name && (
+            <span className="text-sm text-white/60">
+              Playing on {nowPlaying.device.name}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+    {nowPlaying.track.progressPercentage && (
+      <div className="mt-4 bg-white/20 rounded-full h-1">
+        <div 
+          className="bg-white h-1 rounded-full transition-all"
+          style={{ width: `${nowPlaying.track.progressPercentage}%` }}
+        />
+      </div>
+    )}
+  </div>
+);
+
+const PlaylistsSection = ({ playlists, selectedPlaylist, onSelectPlaylist }) => (
+  <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-xl font-bold flex items-center gap-2">
+        <Music className="w-5 h-5 text-indigo-600" />
+        Your Playlists
+      </h2>
+      <span className="text-sm text-gray-500">{playlists?.length || 0}</span>
+    </div>
+    
+    <div className="space-y-2 max-h-[600px] overflow-y-auto">
+      {playlists?.map(playlist => (
+        <button
+          key={playlist.id}
+          onClick={() => onSelectPlaylist(playlist)}
+          className={`w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left ${
+            selectedPlaylist?.id === playlist.id 
+              ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500' 
+              : ''
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            {playlist.images?.[0]?.url ? (
+              <img 
+                src={playlist.images[0].url} 
+                alt={playlist.name}
+                className="w-12 h-12 rounded"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                <Music className="w-6 h-6 text-gray-400" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="font-medium truncate">{playlist.name}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {playlist.tracksCount} tracks
+              </div>
+            </div>
+          </div>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const MoodAnalysisSection = ({ analyzing, analyzedMood, selectedPlaylist, onShare }) => (
+  <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-xl font-bold flex items-center gap-2">
+        <Sparkles className="w-5 h-5 text-purple-600" />
+        Mood Analysis
+      </h2>
+      {analyzedMood && (
+        <div className="flex gap-2">
+          <button
+            onClick={onShare}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <Share2 className="w-4 h-4" />
+            Share
+          </button>
+          <Link
+            to="/flow-optimizer"
+            state={{ 
+              tracks: analyzedMood.tracks,
+              playlistId: selectedPlaylist?.id,
+              playlistName: selectedPlaylist?.name 
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+          >
+            <Zap className="w-4 h-4" />
+            Optimize
+          </Link>
+        </div>
+      )}
+    </div>
+
+    {analyzing && (
+      <div className="flex flex-col items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-400">Analyzing playlist mood...</p>
+      </div>
+    )}
+
+    {!analyzing && !analyzedMood && (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <Sparkles className="w-16 h-16 mb-4 opacity-50" />
+        <p className="text-lg">Select a playlist to analyze its mood</p>
+        <p className="text-sm mt-2 text-gray-400">AI-powered emotional analysis</p>
+      </div>
+    )}
+
+    {analyzedMood && (
+      <div className="space-y-6">
+        <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg">
+          <h3 className="font-semibold mb-2">Overall Mood</h3>
+          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {analyzedMood.overallMood}
+          </p>
+        </div>
+
+        {analyzedMood.moodDistribution && (
+          <div className="space-y-3">
+            <h3 className="font-semibold">Mood Distribution</h3>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(analyzedMood.moodDistribution).map(([mood, count]) => (
+                <div
+                  key={mood}
+                  className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-sm font-medium"
+                >
+                  {mood}: {count}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <h3 className="font-semibold">Track Moods</h3>
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {analyzedMood.tracks?.slice(0, 10).map((track, index) => (
+              <div 
+                key={index}
+                className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-gray-700"
+              >
+                <span className="text-sm truncate flex-1">{track.name}</span>
+                <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded ml-2">
+                  {track.mood}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+const TopArtistsSection = ({ artists }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+      <TrendingUp className="w-5 h-5 text-green-600" />
+      Top Artists
+    </h2>
+    <div className="space-y-3">
+      {artists?.slice(0, 5).map((artist, index) => (
+        <div key={artist.id} className="flex items-center gap-3">
+          <span className="text-lg font-bold text-gray-400 w-6">#{index + 1}</span>
+          {artist.images?.[0]?.url && (
+            <img 
+              src={artist.images[0].url} 
+              alt={artist.name}
+              className="w-12 h-12 rounded-full"
+            />
+          )}
+          <div className="flex-1">
+            <div className="font-medium">{artist.name}</div>
+            <div className="text-sm text-gray-500">
+              {artist.genres?.slice(0, 2).join(', ')}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const TopTracksSection = ({ tracks }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+      <Music className="w-5 h-5 text-pink-600" />
+      Top Tracks
+    </h2>
+    <div className="space-y-3">
+      {tracks?.slice(0, 5).map((track, index) => (
+        <div key={track.id} className="flex items-center gap-3">
+          <span className="text-lg font-bold text-gray-400 w-6">#{index + 1}</span>
+          {track.album?.images?.[0]?.url && (
+            <img 
+              src={track.album.images[0].url} 
+              alt={track.album.name}
+              className="w-12 h-12 rounded"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="font-medium truncate">{track.name}</div>
+            <div className="text-sm text-gray-500 truncate">
+              {track.artists?.map(a => a.name).join(', ')}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const QuickActionCard = ({ icon: Icon, title, description, to, color }) => {
   const colors = {
     purple: 'from-purple-500 to-pink-500',

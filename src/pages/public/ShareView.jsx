@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Loader } from '../../components/ui/Loader';
 import MoodLineChart from '../../components/charts/MoodLineChart';
-import api from '../../lib/api';
+import api from '../../api/client';
 import { Eye, Music, Calendar } from 'lucide-react';
 
 const Share = () => {

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
-import { useAuthStore } from '../../store/authStore';
-import api from '../../lib/api';
+import api from '../../api/client';
 import toast from 'react-hot-toast';
 import { X, ExternalLink, Music2, Apple } from 'lucide-react';
 
