@@ -12,7 +12,7 @@ import {
   getMoodTrends,
   analyzePlaylistMood,
   sharePlaylist
-} from '../api/dashboard';
+} from '../../api/dashboard';
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
