@@ -31,7 +31,7 @@ const MoodAnalyzer = () => {
         getGenreAnalysis('medium_term').catch(() => null)
       ]);
 
-      setPlaylists(playlistsData.playlists || playlistsData);
+      setPlaylists(playlistsData); // Already returns array directly
       setMoodTrends(trendsData);
       setActivityData(activityRes);
       setGenreData(genresRes);

@@ -156,7 +156,7 @@ const Dashboard = () => {
     );
   }
 
-  const { user, stats, playlists, topArtists, topTracks, topGenres } = dashboardData;
+  const { user, stats, playlists = [], topArtists, topTracks, topGenres } = dashboardData;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">

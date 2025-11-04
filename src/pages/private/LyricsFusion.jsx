@@ -27,7 +27,7 @@ const LyricsFusion = () => {
     try {
       setLoading(true);
       const data = await getPlaylists();
-      setPlaylists(data.playlists || data);
+      setPlaylists(data); // Already returns array directly
     } catch (error) {
       console.error('Failed to fetch playlists:', error);
       toast.error('Failed to load playlists');

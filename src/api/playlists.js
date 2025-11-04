@@ -8,13 +8,14 @@ import api from './client';
 
 /**
  * Get user's playlists
- * @returns {Promise} List of user playlists
+ * @returns {Promise} List of user playlists (always returns array)
  */
 export const getPlaylists = async () => {
   console.log('🎵 API: Fetching playlists...');
   const { data } = await api.get('/playlists');
   console.log('✅ API: Playlists received');
-  return data;
+  // Always return the playlists array directly
+  return data.playlists || data || [];
 };
 
 /**

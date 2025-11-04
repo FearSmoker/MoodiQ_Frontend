@@ -25,8 +25,8 @@ const Playlists = () => {
       setLoading(true);
       console.log('🎵 Fetching user playlists...');
       const data = await getPlaylists();
-      setPlaylists(data.playlists || data);
-      console.log(`✅ Loaded ${data.playlists?.length || data.length} playlists`);
+      setPlaylists(data); // Already returns array directly
+      console.log(`✅ Loaded ${data.length} playlists`);
     } catch (error) {
       console.error('Failed to fetch playlists:', error);
       toast.error('Failed to load playlists');
