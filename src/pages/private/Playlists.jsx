@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, ExternalLink, Sparkles, Play, TrendingUp, Heart } from 'lucide-react';
+import { Music, ExternalLink, Sparkles, Play, TrendingUp, Share2, Loader2 } from 'lucide-react';
 import { getPlaylists, getPlaylist, getPlaylistMood } from '../../api/playlists';
 import { sharePlaylist } from '../../api/user';
 import { Loader } from '../../components/ui/Loader';
@@ -15,6 +15,7 @@ const Playlists = () => {
   const [playlistDetails, setPlaylistDetails] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [moodData, setMoodData] = useState(null);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     fetchPlaylists();
@@ -25,11 +26,17 @@ const Playlists = () => {
       setLoading(true);
       console.log('🎵 Fetching user playlists...');
       const data = await getPlaylists();
-      setPlaylists(data); // Already returns array directly
-      console.log(`✅ Loaded ${data.length} playlists`);
+      
+      // Remove duplicates by unique ID
+      const uniquePlaylists = Array.from(
+        new Map(data.map(p => [p.id, p])).values()
+      );
+      
+      setPlaylists(uniquePlaylists);
+      console.log(`✅ Loaded ${uniquePlaylists.length} unique playlists`);
     } catch (error) {
       console.error('Failed to fetch playlists:', error);
-      toast.error('Failed to load playlists');
+      toast.error('Failed to load playlists', { id: 'playlist-error' });
     } finally {
       setLoading(false);
     }
@@ -46,7 +53,7 @@ const Playlists = () => {
       setPlaylistDetails(details);
     } catch (error) {
       console.error('Failed to load playlist details:', error);
-      toast.error('Failed to load playlist details');
+      toast.error('Failed to load playlist details', { id: 'details-error' });
     }
   };
 
@@ -60,10 +67,10 @@ const Playlists = () => {
       const analysis = await getPlaylistMood(playlist.id);
       setMoodData(analysis);
       
-      toast.success('Playlist analyzed successfully!');
+      toast.success('Playlist analyzed successfully!', { id: 'analyze-success' });
     } catch (error) {
       console.error('Failed to analyze playlist:', error);
-      toast.error(error.response?.data?.message || 'Failed to analyze playlist');
+      toast.error(error.response?.data?.message || 'Failed to analyze playlist', { id: 'analyze-error' });
     } finally {
       setAnalyzing(false);
     }
@@ -71,7 +78,7 @@ const Playlists = () => {
 
   const handleOptimizeFlow = (playlist, moodAnalysis) => {
     if (!moodAnalysis || !moodAnalysis.tracks) {
-      toast.error('Please analyze the playlist first');
+      toast.error('Please analyze the playlist first', { id: 'opt-error' });
       return;
     }
 
@@ -86,10 +93,11 @@ const Playlists = () => {
 
   const handleShare = async (playlist, moodAnalysis) => {
     if (!moodAnalysis) {
-      toast.error('Please analyze the playlist first');
+      toast.error('Please analyze the playlist first', { id: 'share-error' });
       return;
     }
 
+    setSharing(true);
     try {
       const result = await sharePlaylist(
         playlist.id,
@@ -99,10 +107,12 @@ const Playlists = () => {
       );
       
       await navigator.clipboard.writeText(result.fullUrl);
-      toast.success('Share link copied to clipboard!');
+      toast.success('Share link copied to clipboard!', { id: 'share-success' });
     } catch (error) {
       console.error('Failed to share playlist:', error);
-      toast.error('Failed to create share link');
+      toast.error('Failed to create share link', { id: 'share-error' });
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -115,7 +125,7 @@ const Playlists = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">My Playlists</h1>
@@ -185,7 +195,7 @@ const Playlists = () => {
                     <img
                       src={selectedPlaylist.images[0].url}
                       alt={selectedPlaylist.name}
-                      className="w-20 h-20 rounded-lg"
+                      className="w-20 h-20 rounded-lg flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
@@ -230,10 +240,11 @@ const Playlists = () => {
 
                       <Button
                         onClick={() => handleShare(selectedPlaylist, moodData)}
+                        isLoading={sharing}
                         variant="secondary"
                         className="w-full justify-center"
                       >
-                        <Heart className="w-4 h-4 mr-2" />
+                        <Share2 className="w-4 h-4 mr-2" />
                         Share
                       </Button>
                     </>
@@ -281,7 +292,7 @@ const Playlists = () => {
 
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Analyzed {moodData.totalTracks} tracks
+                        Analyzed {moodData.total_tracks} tracks
                       </p>
                       <p className="text-xs text-gray-400">
                         {new Date(moodData.analyzedAt).toLocaleString()}
@@ -316,7 +327,7 @@ const Playlists = () => {
                 )}
               </div>
             ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center sticky top-6">
                 <Play className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-600 dark:text-gray-400">
                   Select a playlist to view details

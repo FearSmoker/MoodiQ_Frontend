@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import { Wand2, Plus, Music, Zap, Sparkles } from 'lucide-react';
-import { generateMoodPlaylist, generateActivityPlaylist, createPlaylist } from '../../api/playlists';
+import { Wand2, Plus, Music, Zap, Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { 
+  generateMoodPlaylist, 
+  generateActivityPlaylist,
+  generateFromTopTracks,
+  generateFromRecentlyPlayed,
+  createPlaylist 
+} from '../../api/playlists';
 import { Button } from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 
 const MoodGenerator = () => {
+  const [activeTab, setActiveTab] = useState('mood'); // 'mood', 'activity', 'smart'
   const [selectedMood, setSelectedMood] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
-  const [customPrompt, setCustomPrompt] = useState('');
+  const [smartMode, setSmartMode] = useState('top-tracks'); // 'top-tracks', 'recent'
+  const [targetMood, setTargetMood] = useState('Happy');
+  const [timeRange, setTimeRange] = useState('medium_term');
   const [generating, setGenerating] = useState(false);
   const [generatedTracks, setGeneratedTracks] = useState(null);
   const [playlistName, setPlaylistName] = useState('');
@@ -23,29 +32,28 @@ const MoodGenerator = () => {
   ];
 
   const activities = [
-    { name: 'Study', emoji: '📚', activity: 'study' },
-    { name: 'Workout', emoji: '💪', activity: 'workout' },
-    { name: 'Party', emoji: '🎉', activity: 'party' },
-    { name: 'Sleep', emoji: '😴', activity: 'sleep' },
-    { name: 'Work', emoji: '💼', activity: 'work' },
-    { name: 'Meditation', emoji: '🧘', activity: 'meditation' },
+    { name: 'Study', emoji: '📚', activity: 'study', color: 'from-blue-500 to-indigo-500' },
+    { name: 'Workout', emoji: '💪', activity: 'workout', color: 'from-red-500 to-orange-500' },
+    { name: 'Party', emoji: '🎉', activity: 'party', color: 'from-purple-500 to-pink-500' },
+    { name: 'Sleep', emoji: '😴', activity: 'sleep', color: 'from-indigo-500 to-purple-500' },
+    { name: 'Work', emoji: '💼', activity: 'work', color: 'from-gray-500 to-blue-500' },
+    { name: 'Meditation', emoji: '🧘', activity: 'meditation', color: 'from-green-500 to-teal-500' },
   ];
 
   const handleGenerateMood = async (mood) => {
     setSelectedMood(mood);
-    setSelectedActivity(null);
     setGenerating(true);
     setGeneratedTracks(null);
 
     try {
       console.log('🎨 Generating mood playlist:', mood.name);
-      const result = await generateMoodPlaylist(mood.targetMood, 30);
+      const result = await generateMoodPlaylist(mood.targetMood, null, 30);
       setGeneratedTracks(result);
       setPlaylistName(`${mood.name} Vibes - ${new Date().toLocaleDateString()}`);
-      toast.success(`Generated ${result.total || result.tracks?.length || 0} tracks!`);
+      toast.success(`Generated ${result.total || result.tracks?.length || 0} tracks!`, { id: 'gen-success' });
     } catch (error) {
       console.error('Failed to generate mood playlist:', error);
-      toast.error(error.response?.data?.message || 'Failed to generate playlist');
+      toast.error(error.response?.data?.message || 'Failed to generate playlist', { id: 'gen-error' });
     } finally {
       setGenerating(false);
     }
@@ -53,19 +61,44 @@ const MoodGenerator = () => {
 
   const handleGenerateActivity = async (activity) => {
     setSelectedActivity(activity);
-    setSelectedMood(null);
     setGenerating(true);
     setGeneratedTracks(null);
 
     try {
       console.log('🏃 Generating activity playlist:', activity.name);
-      const result = await generateActivityPlaylist(activity.activity, 30);
+      const result = await generateActivityPlaylist(activity.activity, null, 30);
       setGeneratedTracks(result);
       setPlaylistName(`${activity.name} Mix - ${new Date().toLocaleDateString()}`);
-      toast.success(`Generated ${result.total || result.tracks?.length || 0} tracks!`);
+      toast.success(`Generated ${result.total || result.tracks?.length || 0} tracks!`, { id: 'gen-success' });
     } catch (error) {
       console.error('Failed to generate activity playlist:', error);
-      toast.error(error.response?.data?.message || 'Failed to generate playlist');
+      toast.error(error.response?.data?.message || 'Failed to generate playlist', { id: 'gen-error' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGenerateSmart = async () => {
+    setGenerating(true);
+    setGeneratedTracks(null);
+
+    try {
+      console.log('🎯 Generating smart playlist:', smartMode);
+      
+      let result;
+      if (smartMode === 'top-tracks') {
+        result = await generateFromTopTracks(targetMood, 30, timeRange);
+        setPlaylistName(`Top Tracks Mix - ${new Date().toLocaleDateString()}`);
+      } else {
+        result = await generateFromRecentlyPlayed(targetMood, 30);
+        setPlaylistName(`Recently Played Mix - ${new Date().toLocaleDateString()}`);
+      }
+      
+      setGeneratedTracks(result);
+      toast.success(`Generated ${result.total || result.tracks?.length || 0} tracks!`, { id: 'gen-success' });
+    } catch (error) {
+      console.error('Failed to generate smart playlist:', error);
+      toast.error(error.response?.data?.message || 'Failed to generate playlist', { id: 'gen-error' });
     } finally {
       setGenerating(false);
     }
@@ -73,7 +106,7 @@ const MoodGenerator = () => {
 
   const handleSaveToSpotify = async () => {
     if (!generatedTracks || !playlistName) {
-      toast.error('Please generate a playlist first');
+      toast.error('Please generate a playlist first', { id: 'save-error' });
       return;
     }
 
@@ -89,18 +122,18 @@ const MoodGenerator = () => {
         true
       );
 
-      toast.success('Playlist saved to Spotify!');
+      toast.success('Playlist saved to Spotify!', { id: 'save-success' });
       window.open(result.url, '_blank');
     } catch (error) {
       console.error('Failed to save playlist:', error);
-      toast.error('Failed to save playlist to Spotify');
+      toast.error('Failed to save playlist to Spotify', { id: 'save-error' });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
@@ -108,80 +141,182 @@ const MoodGenerator = () => {
           Mood Generator
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Create personalized playlists based on your mood or activity
+          Create personalized playlists based on your mood, activity, or listening history
         </p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('mood')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-colors ${
+              activeTab === 'mood'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            🎭 By Mood
+          </button>
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-colors ${
+              activeTab === 'activity'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            🏃 By Activity
+          </button>
+          <button
+            onClick={() => setActiveTab('smart')}
+            className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-colors ${
+              activeTab === 'smart'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            ✨ Smart Mix
+          </button>
+        </div>
       </div>
 
       {/* Mood Selection */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-indigo-600" />
-          Choose Your Mood
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {moods.map((mood, index) => (
-            <button
-              key={index}
-              onClick={() => handleGenerateMood(mood)}
-              disabled={generating}
-              className={`bg-gradient-to-br ${mood.color} text-white rounded-xl p-6 text-center hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
-                selectedMood?.name === mood.name ? 'ring-4 ring-white' : ''
-              }`}
-            >
-              <div className="text-4xl mb-2">{mood.emoji}</div>
-              <h3 className="text-lg font-bold">{mood.name}</h3>
-            </button>
-          ))}
+      {activeTab === 'mood' && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-indigo-600" />
+            Choose Your Mood
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {moods.map((mood, index) => (
+              <button
+                key={index}
+                onClick={() => handleGenerateMood(mood)}
+                disabled={generating}
+                className={`bg-gradient-to-br ${mood.color} text-white rounded-xl p-6 text-center hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                  selectedMood?.name === mood.name ? 'ring-4 ring-white scale-105' : ''
+                }`}
+              >
+                <div className="text-4xl mb-2">{mood.emoji}</div>
+                <h3 className="text-lg font-bold">{mood.name}</h3>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Activity Selection */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-          <Zap className="w-6 h-6 text-green-600" />
-          Choose Your Activity
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {activities.map((activity, index) => (
-            <button
-              key={index}
-              onClick={() => handleGenerateActivity(activity)}
-              disabled={generating}
-              className={`bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-xl p-6 text-center hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
-                selectedActivity?.name === activity.name ? 'ring-4 ring-white' : ''
-              }`}
-            >
-              <div className="text-4xl mb-2">{activity.emoji}</div>
-              <h3 className="text-lg font-bold">{activity.name}</h3>
-            </button>
-          ))}
+      {activeTab === 'activity' && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <Zap className="w-6 h-6 text-green-600" />
+            Choose Your Activity
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {activities.map((activity, index) => (
+              <button
+                key={index}
+                onClick={() => handleGenerateActivity(activity)}
+                disabled={generating}
+                className={`bg-gradient-to-br ${activity.color} text-white rounded-xl p-6 text-center hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                  selectedActivity?.name === activity.name ? 'ring-4 ring-white scale-105' : ''
+                }`}
+              >
+                <div className="text-4xl mb-2">{activity.emoji}</div>
+                <h3 className="text-lg font-bold">{activity.name}</h3>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Custom Prompt (Future Enhancement) */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Custom Mood (Coming Soon)</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Describe the mood you want and let AI create a perfect playlist
-        </p>
-        <textarea
-          placeholder="E.g., 'Upbeat music for a road trip' or 'Cozy evening vibes'"
-          className="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 mb-4"
-          rows={3}
-          value={customPrompt}
-          onChange={(e) => setCustomPrompt(e.target.value)}
-          disabled
-        />
-        <Button disabled className="opacity-50 cursor-not-allowed">
-          <Wand2 className="w-5 h-5 mr-2" />
-          Generate Custom Playlist (Coming Soon)
-        </Button>
-      </div>
+      {/* Smart Mix */}
+      {activeTab === 'smart' && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
+          <h2 className="text-2xl font-bold mb-4">Smart Mix Generator</h2>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-3">Source</label>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setSmartMode('top-tracks')}
+                  className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
+                    smartMode === 'top-tracks'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">Top Tracks</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Generate from your most played songs
+                  </div>
+                </button>
+                <button
+                  onClick={() => setSmartMode('recent')}
+                  className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
+                    smartMode === 'recent'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">Recently Played</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Generate from your recent listening
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {smartMode === 'top-tracks' && (
+                <div>
+                  <label className="block text-sm font-medium mb-3">Time Range</label>
+                  <select
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                  >
+                    <option value="short_term">Last 4 Weeks</option>
+                    <option value="medium_term">Last 6 Months</option>
+                    <option value="long_term">All Time</option>
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium mb-3">Target Mood</label>
+                <select
+                  value={targetMood}
+                  onChange={(e) => setTargetMood(e.target.value)}
+                  className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                >
+                  {moods.map((mood) => (
+                    <option key={mood.name} value={mood.targetMood}>
+                      {mood.emoji} {mood.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <Button 
+            onClick={handleGenerateSmart} 
+            isLoading={generating}
+            className="w-full"
+          >
+            <Sparkles className="w-5 h-5 mr-2" />
+            Generate Smart Mix
+          </Button>
+        </div>
+      )}
 
       {/* Generation Progress */}
       {generating && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+          <Loader2 className="animate-spin w-16 h-16 mx-auto mb-4 text-indigo-600" />
           <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">
             Generating your perfect playlist...
           </p>
@@ -198,7 +333,7 @@ const MoodGenerator = () => {
             <div>
               <h2 className="text-2xl font-bold mb-2">Generated Playlist</h2>
               <p className="text-gray-600 dark:text-gray-400">
-                {generatedTracks.total || generatedTracks.tracks?.length || 0} tracks generated
+                {generatedTracks.total || generatedTracks.tracks?.length || 0} tracks • {generatedTracks.personalized ? '✨ Personalized' : '🎵 Standard'}
               </p>
             </div>
             <div className="flex flex-col gap-3 w-full md:w-auto">
@@ -221,7 +356,7 @@ const MoodGenerator = () => {
           </div>
 
           {/* Track List */}
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-[500px] overflow-y-auto">
             {generatedTracks.tracks?.map((track, index) => (
               <div
                 key={track.id || index}
@@ -246,14 +381,14 @@ const MoodGenerator = () => {
                   </p>
                 </div>
 
-                {track.preview_url && (
+                {track.external_urls?.spotify && (
                   <a
-                    href={track.preview_url}
+                    href={track.external_urls.spotify}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-shrink-0 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs font-medium hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+                    className="flex-shrink-0 p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                   >
-                    Preview
+                    <ExternalLink className="w-4 h-4" />
                   </a>
                 )}
               </div>
@@ -268,8 +403,8 @@ const MoodGenerator = () => {
           <Music className="w-16 h-16 mx-auto mb-4 text-indigo-600 dark:text-indigo-400" />
           <h3 className="text-xl font-bold mb-2">AI-Powered Playlist Generation</h3>
           <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Select a mood or activity above to generate a personalized playlist. Our AI analyzes
-            millions of tracks to find the perfect songs that match your vibe.
+            Select a mood, activity, or use smart mix to generate a personalized playlist. Our AI analyzes
+            millions of tracks to find the perfect songs that match your preferences.
           </p>
         </div>
       )}

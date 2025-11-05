@@ -27,7 +27,13 @@ const LyricsFusion = () => {
     try {
       setLoading(true);
       const data = await getPlaylists();
-      setPlaylists(data); // Already returns array directly
+      
+      // Remove duplicates by unique ID
+      const uniquePlaylists = Array.from(
+        new Map(data.map(p => [p.id, p])).values()
+      );
+      
+      setPlaylists(uniquePlaylists);
     } catch (error) {
       console.error('Failed to fetch playlists:', error);
       toast.error('Failed to load playlists');

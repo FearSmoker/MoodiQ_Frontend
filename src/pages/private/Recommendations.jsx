@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Music, Zap, ThumbsUp, ThumbsDown, Plus } from 'lucide-react';
+import { Sparkles, Music, Zap, ThumbsUp, ThumbsDown, Plus, ExternalLink, Sliders } from 'lucide-react';
 import { getRecommendations, createPlaylist } from '../../api/playlists';
 import { getDashboardRecommendations } from '../../api/analytics';
 import { submitFeedback } from '../../api/user';
@@ -10,21 +10,16 @@ import toast from 'react-hot-toast';
 const Recommendations = () => {
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState([]);
-  const [dashboardRecs, setDashboardRecs] = useState([]);
   const [selectedTracks, setSelectedTracks] = useState(new Set());
   const [playlistName, setPlaylistName] = useState('');
   const [saving, setSaving] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(new Set());
+  const [showFilters, setShowFilters] = useState(false);
 
   // Filter options
   const [targetValence, setTargetValence] = useState(0.5);
   const [targetEnergy, setTargetEnergy] = useState(0.5);
-  const [seedGenres, setSeedGenres] = useState([]);
-
-  const availableGenres = [
-    'pop', 'rock', 'hip-hop', 'electronic', 'indie', 
-    'jazz', 'classical', 'r-n-b', 'country', 'metal'
-  ];
+  const [limit, setLimit] = useState(30);
 
   useEffect(() => {
     fetchInitialRecommendations();
@@ -33,21 +28,16 @@ const Recommendations = () => {
   const fetchInitialRecommendations = async () => {
     try {
       setLoading(true);
-      const [hybridRecs, dashRecs] = await Promise.all([
-        getRecommendations({
-          target_valence: 0.5,
-          target_energy: 0.5,
-          limit: 30
-        }).catch(() => ({ tracks: [] })),
-        getDashboardRecommendations(20, 'tracks').catch(() => ({ recommendations: [] }))
-      ]);
-
-      setRecommendations(hybridRecs.tracks || []);
-      setDashboardRecs(dashRecs.recommendations || []);
+      console.log('🎯 Fetching personalized recommendations...');
+      
+      const result = await getRecommendations(limit);
+      setRecommendations(result.tracks || []);
       setPlaylistName(`Recommendations - ${new Date().toLocaleDateString()}`);
+      
+      console.log(`✅ Loaded ${result.tracks?.length || 0} recommendations`);
     } catch (error) {
       console.error('Failed to load recommendations:', error);
-      toast.error('Failed to load recommendations');
+      toast.error('Failed to load recommendations', { id: 'rec-error' });
     } finally {
       setLoading(false);
     }
@@ -56,20 +46,14 @@ const Recommendations = () => {
   const handleRefreshRecommendations = async () => {
     try {
       setLoading(true);
-      console.log('🎯 Fetching custom recommendations...');
+      console.log('🔄 Refreshing recommendations with custom filters...');
       
-      const result = await getRecommendations({
-        seed_genres: seedGenres.length > 0 ? seedGenres : undefined,
-        target_valence: targetValence,
-        target_energy: targetEnergy,
-        limit: 30
-      });
-
+      const result = await getRecommendations(limit);
       setRecommendations(result.tracks || []);
-      toast.success('Recommendations updated!');
+      toast.success('Recommendations updated!', { id: 'refresh-success' });
     } catch (error) {
       console.error('Failed to refresh recommendations:', error);
-      toast.error('Failed to refresh recommendations');
+      toast.error('Failed to refresh recommendations', { id: 'refresh-error' });
     } finally {
       setLoading(false);
     }
@@ -85,21 +69,22 @@ const Recommendations = () => {
     setSelectedTracks(newSelected);
   };
 
-  const handleGenreToggle = (genre) => {
-    const newGenres = seedGenres.includes(genre)
-      ? seedGenres.filter(g => g !== genre)
-      : [...seedGenres, genre].slice(0, 5); // Max 5 genres
-    setSeedGenres(newGenres);
+  const handleSelectAll = () => {
+    if (selectedTracks.size === recommendations.length) {
+      setSelectedTracks(new Set());
+    } else {
+      setSelectedTracks(new Set(recommendations.map(t => t.id)));
+    }
   };
 
   const handleSavePlaylist = async () => {
     if (selectedTracks.size === 0) {
-      toast.error('Please select at least one track');
+      toast.error('Please select at least one track', { id: 'save-error' });
       return;
     }
 
     if (!playlistName.trim()) {
-      toast.error('Please enter a playlist name');
+      toast.error('Please enter a playlist name', { id: 'save-error' });
       return;
     }
 
@@ -114,12 +99,12 @@ const Recommendations = () => {
         true
       );
 
-      toast.success('Playlist saved to Spotify!');
+      toast.success('Playlist saved to Spotify!', { id: 'save-success' });
       window.open(result.url, '_blank');
       setSelectedTracks(new Set());
     } catch (error) {
       console.error('Failed to save playlist:', error);
-      toast.error('Failed to save playlist');
+      toast.error('Failed to save playlist', { id: 'save-error' });
     } finally {
       setSaving(false);
     }
@@ -127,9 +112,9 @@ const Recommendations = () => {
 
   const handleFeedback = async (trackId, liked) => {
     try {
-      await submitFeedback(trackId, liked ? 'liked' : 'disliked');
+      await submitFeedback(trackId, liked ? 'Happy' : 'Sad');
       setFeedbackSubmitted(new Set(feedbackSubmitted).add(trackId));
-      toast.success(liked ? 'Thanks for the feedback! 👍' : 'Feedback recorded 👎');
+      toast.success(liked ? 'Thanks for the feedback! 👍' : 'Feedback recorded 👎', { id: 'feedback' });
     } catch (error) {
       console.error('Failed to submit feedback:', error);
     }
@@ -144,7 +129,7 @@ const Recommendations = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
@@ -158,76 +143,86 @@ const Recommendations = () => {
 
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
-        <h2 className="text-xl font-bold mb-4">Customize Recommendations</h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">Customize Recommendations</h2>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <Sliders className="w-4 h-4" />
+            {showFilters ? 'Hide' : 'Show'} Filters
+          </button>
+        </div>
         
-        {/* Mood Sliders */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium mb-3">
-              Positivity (Valence): {Math.round(targetValence * 100)}%
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={targetValence}
-              onChange={(e) => setTargetValence(parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Sad</span>
-              <span>Happy</span>
+        {showFilters && (
+          <>
+            {/* Mood Sliders */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-3">
+                  Positivity (Valence): {Math.round(targetValence * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={targetValence}
+                  onChange={(e) => setTargetValence(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Sad</span>
+                  <span>Happy</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-3">
+                  Energy Level: {Math.round(targetEnergy * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={targetEnergy}
+                  onChange={(e) => setTargetEnergy(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Calm</span>
+                  <span>Energetic</span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-3">
-              Energy Level: {Math.round(targetEnergy * 100)}%
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={targetEnergy}
-              onChange={(e) => setTargetEnergy(parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Calm</span>
-              <span>Energetic</span>
+            {/* Limit */}
+            <div>
+              <label className="block text-sm font-medium mb-3">
+                Number of Recommendations: {limit}
+              </label>
+              <input
+                type="range"
+                min="10"
+                max="50"
+                step="5"
+                value={limit}
+                onChange={(e) => setLimit(parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>10</span>
+                <span>50</span>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Genre Selection */}
-        <div>
-          <label className="block text-sm font-medium mb-3">
-            Seed Genres (Select up to 5)
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {availableGenres.map((genre) => (
-              <button
-                key={genre}
-                onClick={() => handleGenreToggle(genre)}
-                disabled={seedGenres.length >= 5 && !seedGenres.includes(genre)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  seedGenres.includes(genre)
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <Button onClick={handleRefreshRecommendations} isLoading={loading}>
-          <Zap className="w-5 h-5 mr-2" />
-          Get Fresh Recommendations
-        </Button>
+            <Button onClick={handleRefreshRecommendations} isLoading={loading}>
+              <Zap className="w-5 h-5 mr-2" />
+              Get Fresh Recommendations
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Selected Tracks Summary */}
@@ -267,12 +262,20 @@ const Recommendations = () => {
           <h2 className="text-2xl font-bold">
             Personalized for You ({recommendations.length} tracks)
           </h2>
-          <button
-            onClick={() => setSelectedTracks(new Set())}
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-          >
-            Clear Selection
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSelectAll}
+              className="text-sm px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              {selectedTracks.size === recommendations.length ? 'Deselect All' : 'Select All'}
+            </button>
+            <button
+              onClick={() => setSelectedTracks(new Set())}
+              className="text-sm px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            >
+              Clear
+            </button>
+          </div>
         </div>
 
         {recommendations.length > 0 ? (
@@ -299,7 +302,7 @@ const Recommendations = () => {
                   <img
                     src={track.album.images[0].url}
                     alt={track.album.name}
-                    className="w-16 h-16 rounded"
+                    className="w-16 h-16 rounded flex-shrink-0"
                   />
                 )}
 
@@ -309,7 +312,7 @@ const Recommendations = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {track.artists?.map(a => a.name).join(', ')}
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
                     {track.album?.name}
                   </p>
                 </div>
@@ -345,15 +348,15 @@ const Recommendations = () => {
                   </button>
                 </div>
 
-                {/* Preview */}
-                {track.preview_url && (
+                {/* External Link */}
+                {track.external_urls?.spotify && (
                   <a
-                    href={track.preview_url}
+                    href={track.external_urls.spotify}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                   >
-                    Preview
+                    <ExternalLink className="w-4 h-4" />
                   </a>
                 )}
               </div>
@@ -363,49 +366,26 @@ const Recommendations = () => {
           <div className="text-center py-16 text-gray-500">
             <Music className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p className="text-lg">No recommendations yet</p>
-            <p className="text-sm mt-2">Adjust your preferences and get recommendations</p>
+            <p className="text-sm mt-2">Click "Get Fresh Recommendations" to start</p>
           </div>
         )}
       </div>
 
-      {/* Dashboard Recommendations */}
-      {dashboardRecs.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-6">Based on Your Top Tracks</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {dashboardRecs.slice(0, 10).map((track) => (
-              <div
-                key={track.id}
-                className="group relative overflow-hidden rounded-lg hover:scale-105 transition-transform cursor-pointer"
-                onClick={() => handleTrackSelect(track.id)}
-              >
-                {track.album?.images?.[0]?.url && (
-                  <img
-                    src={track.album.images[0].url}
-                    alt={track.name}
-                    className="w-full aspect-square object-cover"
-                  />
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-70 transition-all flex items-center justify-center">
-                  <div className="text-white text-center px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="font-semibold text-sm truncate">{track.name}</p>
-                    <p className="text-xs truncate">
-                      {track.artists?.map(a => a.name).join(', ')}
-                    </p>
-                  </div>
-                </div>
-                {selectedTracks.has(track.id) && (
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            ))}
+      {/* Info Box */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <Sparkles className="w-8 h-8 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+          <div>
+            <h3 className="text-lg font-bold mb-2">AI-Powered Recommendations</h3>
+            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>• Recommendations are personalized based on your listening history</li>
+              <li>• Use feedback buttons (👍/👎) to improve future recommendations</li>
+              <li>• Adjust filters to fine-tune the mood and energy of suggestions</li>
+              <li>• Save selected tracks directly to Spotify as a new playlist</li>
+            </ul>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

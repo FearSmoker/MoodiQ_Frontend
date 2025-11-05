@@ -2,7 +2,7 @@ import api from './client';
 
 /**
  * ============================================
- * LYRICS ENDPOINTS (/api/lyrics)
+ * LYRICS API - Matches lyricsController.js
  * ============================================
  */
 
@@ -11,10 +11,9 @@ import api from './client';
  * @param {string} trackId - Spotify track ID
  * @param {string} trackName - Track name
  * @param {string} artistName - Artist name
- * @returns {Promise} Lyrics data with sentiment and source
  */
 export const getTrackLyrics = async (trackId, trackName, artistName) => {
-  console.log('🎤 API: Fetching track lyrics...');
+  console.log(`🎤 API: Fetching lyrics for ${trackName} by ${artistName}...`);
   const { data } = await api.get(`/lyrics/track/${trackId}`, {
     params: { trackName, artistName }
   });
@@ -24,13 +23,12 @@ export const getTrackLyrics = async (trackId, trackName, artistName) => {
 
 /**
  * Analyze lyrics for multiple tracks
- * @param {array} tracks - Array of track objects with name and artist
- * @returns {Promise} Lyrics analysis with sentiment scores, themes, and keywords
+ * @param {Array} tracks - Array of track objects
  */
 export const analyzeLyrics = async (tracks) => {
-  console.log('🔍 API: Analyzing lyrics...');
+  console.log(`🔍 API: Analyzing lyrics for ${tracks.length} tracks...`);
   const { data } = await api.post('/lyrics/analyze', { tracks });
-  console.log('✅ API: Lyrics analyzed');
+  console.log('✅ API: Lyrics analysis complete');
   return data;
 };
 
@@ -38,10 +36,9 @@ export const analyzeLyrics = async (tracks) => {
  * Get lyrics with sentiment analysis
  * @param {string} trackName - Track name
  * @param {string} artistName - Artist name
- * @returns {Promise} Lyrics with sentiment, mood, and language data
  */
 export const getLyricsSentiment = async (trackName, artistName) => {
-  console.log('💭 API: Getting lyrics sentiment...');
+  console.log(`💭 API: Fetching lyrics sentiment for ${trackName}...`);
   const { data } = await api.post('/lyrics/sentiment', {
     trackName,
     artistName
@@ -51,16 +48,15 @@ export const getLyricsSentiment = async (trackName, artistName) => {
 };
 
 /**
- * Search lyrics by query
+ * Search lyrics
  * @param {string} query - Search query
  * @param {number} limit - Number of results (default: 10)
- * @returns {Promise} Search results with lyrics matches
  */
 export const searchLyrics = async (query, limit = 10) => {
-  console.log('🔎 API: Searching lyrics...');
+  console.log(`🔍 API: Searching lyrics for "${query}"...`);
   const { data } = await api.get('/lyrics/search', {
     params: { query, limit }
   });
-  console.log('✅ API: Lyrics search results received');
+  console.log('✅ API: Search results received');
   return data;
 };

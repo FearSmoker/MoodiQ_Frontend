@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Activity, Music, Clock, TrendingUp, Heart, Zap } from 'lucide-react';
-import { getRealtimeAnalysis, getMoodTimeline, getActivityAnalytics } from '../../api/analytics';
+import { Activity, Music, Clock, TrendingUp, Heart, Zap, Radio, RefreshCw } from 'lucide-react';
+import { 
+  getRealtimeAnalysis, 
+  getMoodTimeline, 
+  getActivityAnalytics 
+} from '../../api/analytics';
 import MoodLineChart from '../../components/charts/MoodLineChart';
 import { Loader } from '../../components/ui/Loader';
+import { Button } from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 
 const RealtimeAnalytics = () => {
@@ -12,6 +17,8 @@ const RealtimeAnalytics = () => {
   const [activityData, setActivityData] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedDays, setSelectedDays] = useState(7);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -29,6 +36,8 @@ const RealtimeAnalytics = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('📊 RealtimeAnalytics: Loading data...');
+      
       const [realtime, timeline, activity] = await Promise.all([
         getRealtimeAnalysis().catch(() => null),
         getMoodTimeline(selectedDays).catch(() => null),
@@ -39,9 +48,12 @@ const RealtimeAnalytics = () => {
       setMoodTimeline(timeline);
       setActivityData(activity);
       setIsPlaying(realtime?.isPlaying || false);
+      setLastUpdate(new Date());
+      
+      console.log('✅ RealtimeAnalytics: Data loaded');
     } catch (error) {
       console.error('Failed to load analytics:', error);
-      toast.error('Failed to load real-time analytics');
+      toast.error('Failed to load real-time analytics', { id: 'analytics-error' });
     } finally {
       setLoading(false);
     }
@@ -52,18 +64,28 @@ const RealtimeAnalytics = () => {
       const data = await getRealtimeAnalysis();
       setRealtimeData(data);
       setIsPlaying(data?.isPlaying || false);
+      setLastUpdate(new Date());
     } catch (error) {
+      // Silently fail for polling
       console.log('Could not fetch real-time data');
     }
   };
 
   const fetchMoodTimeline = async (days) => {
     try {
+      console.log(`📈 Fetching mood timeline for ${days} days...`);
       const data = await getMoodTimeline(days);
       setMoodTimeline(data);
     } catch (error) {
       console.error('Failed to fetch mood timeline:', error);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+    toast.success('Data refreshed!', { id: 'refresh-success' });
   };
 
   if (loading) {
@@ -75,7 +97,7 @@ const RealtimeAnalytics = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
@@ -92,16 +114,26 @@ const RealtimeAnalytics = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-            <span className="font-medium">
-              {isPlaying ? 'Currently Playing' : 'Not Playing'}
-            </span>
+            <div>
+              <span className="font-medium">
+                {isPlaying ? 'Currently Playing' : 'Not Playing'}
+              </span>
+              {lastUpdate && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Last updated: {lastUpdate.toLocaleTimeString()}
+                </p>
+              )}
+            </div>
           </div>
-          <button
-            onClick={fetchRealtimeData}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+          <Button
+            onClick={handleRefresh}
+            isLoading={refreshing}
+            variant="secondary"
+            size="sm"
           >
+            <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -109,63 +141,88 @@ const RealtimeAnalytics = () => {
       {realtimeData?.isPlaying && realtimeData.track && (
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center gap-2 mb-4">
-            <Music className="w-5 h-5 animate-pulse" />
+            <Radio className="w-5 h-5 animate-pulse" />
             <span className="font-semibold">Now Playing</span>
           </div>
           
           <div className="flex items-start gap-6">
-            {realtimeData.track.album?.images?.[0]?.url && (
+            {realtimeData.track.albumImage && (
               <img
-                src={realtimeData.track.album.images[0].url}
-                alt={realtimeData.track.album.name}
-                className="w-24 h-24 rounded-lg shadow-lg"
+                src={realtimeData.track.albumImage}
+                alt={realtimeData.track.album?.name || 'Album'}
+                className="w-24 h-24 rounded-lg shadow-lg flex-shrink-0"
               />
             )}
             
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold mb-2">{realtimeData.track.name}</h3>
-              <p className="text-white/90 mb-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-2xl font-bold mb-2 truncate">{realtimeData.track.name}</h3>
+              <p className="text-white/90 mb-4 truncate">
                 {realtimeData.track.artists?.map(a => a.name).join(', ')}
               </p>
               
-              <div className="grid grid-cols-2 gap-4">
-                {realtimeData.mood?.mood && (
-                  <div className="bg-white/20 rounded-lg p-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {realtimeData.mood?.fused_mood && (
+                  <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                     <div className="text-sm text-white/80">Mood</div>
-                    <div className="text-lg font-bold">{realtimeData.mood.mood}</div>
+                    <div className="text-lg font-bold">{realtimeData.mood.fused_mood}</div>
                   </div>
                 )}
                 {realtimeData.mood?.confidence && (
-                  <div className="bg-white/20 rounded-lg p-3">
+                  <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                     <div className="text-sm text-white/80">Confidence</div>
                     <div className="text-lg font-bold">
                       {Math.round(realtimeData.mood.confidence * 100)}%
                     </div>
                   </div>
                 )}
-                {realtimeData.mood?.audioFeatures?.energy !== undefined && (
-                  <div className="bg-white/20 rounded-lg p-3">
+                {realtimeData.mood?.scores?.energy !== undefined && (
+                  <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                     <div className="text-sm text-white/80">Energy</div>
                     <div className="text-lg font-bold">
-                      {Math.round(realtimeData.mood.audioFeatures.energy * 100)}%
+                      {Math.round(realtimeData.mood.scores.energy * 100)}%
                     </div>
                   </div>
                 )}
-                {realtimeData.mood?.audioFeatures?.valence !== undefined && (
-                  <div className="bg-white/20 rounded-lg p-3">
+                {realtimeData.mood?.scores?.valence !== undefined && (
+                  <div className="bg-white/20 backdrop-blur rounded-lg p-3">
                     <div className="text-sm text-white/80">Valence</div>
                     <div className="text-lg font-bold">
-                      {Math.round(realtimeData.mood.audioFeatures.valence * 100)}%
+                      {Math.round(realtimeData.mood.scores.valence * 100)}%
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Progress Bar */}
+              {realtimeData.track.progress !== undefined && realtimeData.track.duration && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>{formatTime(realtimeData.track.progress)}</span>
+                    <span>{formatTime(realtimeData.track.duration)}</span>
+                  </div>
+                  <div className="bg-white/20 rounded-full h-2">
+                    <div 
+                      className="bg-white h-2 rounded-full transition-all"
+                      style={{ 
+                        width: `${(realtimeData.track.progress / realtimeData.track.duration) * 100}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Device */}
+              {realtimeData.device && (
+                <div className="mt-4 text-sm text-white/70">
+                  Playing on {realtimeData.device.name}
+                </div>
+              )}
             </div>
           </div>
 
           {realtimeData.timestamp && (
             <div className="mt-4 text-sm text-white/70">
-              Last updated: {new Date(realtimeData.timestamp).toLocaleTimeString()}
+              Analyzed at: {new Date(realtimeData.timestamp).toLocaleTimeString()}
             </div>
           )}
         </div>
@@ -257,7 +314,7 @@ const RealtimeAnalytics = () => {
       {/* Activity Insights */}
       {activityData && (
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Hourly Activity */}
+          {/* Peak Hours */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
@@ -291,7 +348,7 @@ const RealtimeAnalytics = () => {
             </div>
           </div>
 
-          {/* Daily Activity */}
+          {/* Weekly Pattern */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Heart className="w-5 h-5 text-pink-600" />
@@ -332,6 +389,13 @@ const RealtimeAnalytics = () => {
       </div>
     </div>
   );
+};
+
+// Helper function to format time
+const formatTime = (ms) => {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
 export default RealtimeAnalytics;

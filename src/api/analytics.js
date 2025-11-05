@@ -2,17 +2,16 @@ import api from './client';
 
 /**
  * ============================================
- * ANALYTICS ENDPOINTS (/api/analytics)
+ * ANALYTICS API - Matches analyticsController.js
  * ============================================
  */
 
 /**
- * Get real-time mood trends from recent listening
- * @param {number} limit - Number of recent tracks to analyze (default: 50)
- * @returns {Promise} Mood trends data with distribution and overall mood
+ * Get mood trends from recent listening (ML-powered)
+ * @param {number} limit - Number of tracks to analyze (default: 50)
  */
 export const getMoodTrends = async (limit = 50) => {
-  console.log('🎭 API: Fetching mood trends...');
+  console.log(`📊 API: Fetching mood trends (${limit} tracks)...`);
   const { data } = await api.get('/analytics/mood-trends', {
     params: { limit }
   });
@@ -21,11 +20,10 @@ export const getMoodTrends = async (limit = 50) => {
 };
 
 /**
- * Get listening activity analytics (hourly/daily patterns)
- * @returns {Promise} Activity analytics with peak times
+ * Get listening activity analytics
  */
 export const getActivityAnalytics = async () => {
-  console.log('📈 API: Fetching activity analytics...');
+  console.log('📊 API: Fetching activity analytics...');
   const { data } = await api.get('/analytics/activity');
   console.log('✅ API: Activity analytics received');
   return data;
@@ -34,10 +32,9 @@ export const getActivityAnalytics = async () => {
 /**
  * Get genre analysis
  * @param {string} timeRange - 'short_term', 'medium_term', or 'long_term'
- * @returns {Promise} Genre distribution and categories
  */
 export const getGenreAnalysis = async (timeRange = 'medium_term') => {
-  console.log('🎸 API: Fetching genre analysis...');
+  console.log(`🎸 API: Fetching genre analysis (${timeRange})...`);
   const { data } = await api.get('/analytics/genres', {
     params: { timeRange }
   });
@@ -46,12 +43,11 @@ export const getGenreAnalysis = async (timeRange = 'medium_term') => {
 };
 
 /**
- * Get user's mood timeline (ML-powered)
- * @param {number} days - Number of days to analyze (default: 7)
- * @returns {Promise} Mood timeline with data points
+ * Get user mood timeline (ML-powered)
+ * @param {number} days - Number of days (default: 7)
  */
 export const getMoodTimeline = async (days = 7) => {
-  console.log('📊 API: Fetching mood timeline...');
+  console.log(`📈 API: Fetching mood timeline (${days} days)...`);
   const { data } = await api.get('/analytics/mood-timeline', {
     params: { days }
   });
@@ -60,8 +56,7 @@ export const getMoodTimeline = async (days = 7) => {
 };
 
 /**
- * Get real-time analysis of currently playing track
- * @returns {Promise} Real-time track analysis with mood
+ * Get real-time current track analysis (HYBRID ML)
  */
 export const getRealtimeAnalysis = async () => {
   console.log('⚡ API: Fetching real-time analysis...');
@@ -72,13 +67,13 @@ export const getRealtimeAnalysis = async () => {
 
 /**
  * ============================================
- * DASHBOARD ENDPOINTS (/api/dashboard)
+ * DASHBOARD API - Matches dashboardController.js
  * ============================================
  */
 
 /**
- * Get comprehensive dashboard overview
- * @returns {Promise} Complete dashboard data with stats, playlists, top items, etc.
+ * Get complete dashboard overview (ML-enhanced)
+ * Includes: stats, playlists, top artists/tracks, now playing, ML insights
  */
 export const getDashboardOverview = async () => {
   console.log('📊 API: Fetching dashboard overview...');
@@ -90,7 +85,6 @@ export const getDashboardOverview = async () => {
 /**
  * Get detailed listening statistics
  * @param {string} timeRange - 'short_term', 'medium_term', or 'long_term'
- * @returns {Promise} Detailed listening stats with audio features
  */
 export const getListeningStats = async (timeRange = 'medium_term') => {
   console.log(`📊 API: Fetching listening stats (${timeRange})...`);
@@ -102,8 +96,7 @@ export const getListeningStats = async (timeRange = 'medium_term') => {
 };
 
 /**
- * Get currently playing track with mood analysis
- * @returns {Promise} Now playing data with mood and device info
+ * Get currently playing track with ML mood analysis
  */
 export const getNowPlaying = async () => {
   console.log('🎵 API: Fetching now playing...');
@@ -113,16 +106,58 @@ export const getNowPlaying = async () => {
 };
 
 /**
- * Get personalized recommendations
+ * Get personalized recommendations (ML-powered)
  * @param {number} limit - Number of recommendations (default: 20)
- * @param {string} seedType - 'tracks' or 'artists'
- * @returns {Promise} Personalized recommendations with seeds
  */
-export const getDashboardRecommendations = async (limit = 20, seedType = 'tracks') => {
-  console.log('💡 API: Fetching dashboard recommendations...');
+export const getDashboardRecommendations = async (limit = 20) => {
+  console.log('💡 API: Fetching personalized recommendations...');
   const { data } = await api.get('/dashboard/recommendations', {
-    params: { limit, seedType }
+    params: { limit }
   });
   console.log('✅ API: Recommendations received');
   return data;
+};
+
+/**
+ * ============================================
+ * HELPER FUNCTIONS
+ * ============================================
+ */
+
+/**
+ * Get mood color for visualization
+ */
+export const getMoodColor = (mood) => {
+  const moodLower = mood?.toLowerCase() || '';
+  
+  if (moodLower.includes('happy') || moodLower.includes('joy')) {
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+  } else if (moodLower.includes('sad') || moodLower.includes('melancholy')) {
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  } else if (moodLower.includes('energetic') || moodLower.includes('excited')) {
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+  } else if (moodLower.includes('calm') || moodLower.includes('relaxed')) {
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  } else if (moodLower.includes('angry') || moodLower.includes('aggressive')) {
+    return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+  } else {
+    return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+  }
+};
+
+/**
+ * Format duration from milliseconds to MM:SS
+ */
+export const formatDuration = (ms) => {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = ((ms % 60000) / 1000).toFixed(0);
+  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+};
+
+/**
+ * Calculate percentage
+ */
+export const calculatePercentage = (value, total) => {
+  if (!total || total === 0) return 0;
+  return Math.round((value / total) * 100);
 };

@@ -11,9 +11,22 @@ import {
   Apple,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Brain,
+  TrendingUp,
+  AlertCircle,
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
-import { getPreferences, updatePreferences } from '../../api/user';
+import { 
+  getPreferences, 
+  updatePreferences,
+  getUserStats,
+  getUserPersonalizedModel,
+  triggerModelRetrain,
+  resetUserPersonalization
+} from '../../api/user';
+import { Button } from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
@@ -28,36 +41,119 @@ const Settings = () => {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [userStats, setUserStats] = useState(null);
+  const [mlModel, setMlModel] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [retraining, setRetraining] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     fetchPreferences();
+    fetchUserStats();
+    fetchMLModel();
   }, []);
 
   const fetchPreferences = async () => {
     try {
       setLoading(true);
+      console.log('⚙️ Fetching user preferences...');
       const data = await getPreferences();
       if (data.preferences) {
         setPreferences(data.preferences);
       }
+      console.log('✅ Preferences loaded');
     } catch (error) {
       console.error('Failed to fetch preferences:', error);
+      toast.error('Failed to load preferences', { id: 'pref-error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      setLoadingStats(true);
+      console.log('📊 Fetching user stats...');
+      const data = await getUserStats();
+      setUserStats(data.stats);
+      console.log('✅ Stats loaded');
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const fetchMLModel = async () => {
+    try {
+      console.log('🧠 Fetching ML model info...');
+      const data = await getUserPersonalizedModel();
+      setMlModel(data);
+      console.log('✅ ML model info loaded');
+    } catch (error) {
+      console.error('Failed to fetch ML model:', error);
     }
   };
 
   const handleSavePreferences = async () => {
     try {
       setSaving(true);
+      console.log('💾 Saving preferences...');
       await updatePreferences(preferences);
       await refreshUser();
-      toast.success('Preferences saved successfully!');
+      toast.success('Preferences saved successfully!', { id: 'save-success' });
     } catch (error) {
       console.error('Failed to save preferences:', error);
-      toast.error('Failed to save preferences');
+      toast.error('Failed to save preferences', { id: 'save-error' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRetrainModel = async () => {
+    if (!window.confirm('Retrain your personalized model? This will take a few minutes.')) {
+      return;
+    }
+
+    try {
+      setRetraining(true);
+      console.log('🔄 Triggering model retraining...');
+      const result = await triggerModelRetrain(false);
+      
+      toast.success(result.message || 'Model retraining started!', { id: 'retrain-success' });
+      
+      // Refresh ML model info after a delay
+      setTimeout(() => {
+        fetchMLModel();
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to retrain model:', error);
+      toast.error(error.response?.data?.message || 'Failed to retrain model', { id: 'retrain-error' });
+    } finally {
+      setRetraining(false);
+    }
+  };
+
+  const handleResetPersonalization = async () => {
+    if (!window.confirm('Reset all personalization? This will delete your feedback and model. This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setResetting(true);
+      console.log('🗑️ Resetting personalization...');
+      await resetUserPersonalization();
+      
+      toast.success('Personalization reset successfully!', { id: 'reset-success' });
+      
+      // Refresh data
+      fetchUserStats();
+      fetchMLModel();
+    } catch (error) {
+      console.error('Failed to reset personalization:', error);
+      toast.error('Failed to reset personalization', { id: 'reset-error' });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -65,8 +161,10 @@ const Settings = () => {
     if (window.confirm(`Are you sure you want to unlink ${service === 'youtube' ? 'YouTube' : 'Apple'} Music?`)) {
       try {
         await unlinkService(service);
+        toast.success(`${service === 'youtube' ? 'YouTube' : 'Apple'} Music unlinked`, { id: 'unlink-success' });
       } catch (error) {
         console.error('Failed to unlink service:', error);
+        toast.error('Failed to unlink service', { id: 'unlink-error' });
       }
     }
   };
@@ -80,16 +178,17 @@ const Settings = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Settings</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Manage your account and preferences
+          Manage your account, preferences, and ML personalization
         </p>
       </div>
 
       {/* Profile Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           <h2 className="text-xl font-bold">Profile</h2>
@@ -118,7 +217,7 @@ const Settings = () => {
       </div>
 
       {/* Connected Services */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <Music className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           <h2 className="text-xl font-bold">Connected Services</h2>
@@ -164,14 +263,13 @@ const Settings = () => {
                 </button>
               </div>
             ) : (
-              <button
+              <Button
                 onClick={linkYouTube}
-                disabled={serviceLoading}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+                isLoading={serviceLoading}
+                size="sm"
               >
-                {serviceLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 Connect
-              </button>
+              </Button>
             )}
           </div>
 
@@ -202,7 +300,7 @@ const Settings = () => {
             ) : (
               <button
                 disabled={true}
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg opacity-50 cursor-not-allowed"
+                className="px-4 py-2 text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg opacity-50 cursor-not-allowed"
               >
                 Coming Soon
               </button>
@@ -211,8 +309,113 @@ const Settings = () => {
         </div>
       </div>
 
+      {/* ML Personalization */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          <h2 className="text-xl font-bold">ML Personalization</h2>
+        </div>
+
+        {loadingStats ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+        ) : (
+          <>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Feedback Count</div>
+                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {userStats?.feedbackCount || 0}
+                </div>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Personalization</div>
+                <div className="text-lg font-bold text-purple-600 dark:text-purple-400 capitalize">
+                  {userStats?.personalizationLevel || 'none'}
+                </div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Model Status</div>
+                <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                  {userStats?.hasTrainedModel ? 'Trained' : 'Not Trained'}
+                </div>
+              </div>
+              <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Playlists</div>
+                <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                  {userStats?.playlistsAnalyzed || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Model Info */}
+            {mlModel && (
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-5 h-5 text-indigo-600" />
+                  <h3 className="font-semibold">Model Details</h3>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                    <span className="font-medium">{mlModel.status || 'Unknown'}</span>
+                  </div>
+                  {mlModel.last_trained && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Last Trained:</span>
+                      <span className="font-medium">
+                        {new Date(mlModel.last_trained).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {mlModel.accuracy && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Accuracy:</span>
+                      <span className="font-medium">{Math.round(mlModel.accuracy * 100)}%</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={handleRetrainModel}
+                isLoading={retraining}
+                disabled={!userStats?.hasTrainedModel && userStats?.feedbackCount < 10}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retrain Model
+              </Button>
+              <Button
+                onClick={handleResetPersonalization}
+                isLoading={resetting}
+                variant="destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Reset Personalization
+              </Button>
+            </div>
+
+            {/* Info */}
+            {userStats?.feedbackCount < 10 && (
+              <div className="mt-4 flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Submit at least 10 feedback items to enable personalized model training. 
+                  Current: {userStats?.feedbackCount || 0}/10
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Mood Preferences */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <Palette className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           <h2 className="text-xl font-bold">Mood Preferences</h2>
@@ -293,7 +496,7 @@ const Settings = () => {
       </div>
 
       {/* Notifications */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <Bell className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           <h2 className="text-xl font-bold">Notifications</h2>
@@ -323,20 +526,12 @@ const Settings = () => {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <button
+        <Button
           onClick={handleSavePreferences}
-          disabled={saving}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+          isLoading={saving}
         >
-          {saving ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            'Save Preferences'
-          )}
-        </button>
+          Save Preferences
+        </Button>
       </div>
     </div>
   );
