@@ -1,7 +1,7 @@
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Area, AreaChart } from 'recharts';
 import { motion } from 'framer-motion';
 
-const MoodLineChart = ({ data }) => {
+const MoodLineChart = ({ data, showAggregated = false }) => {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500">
@@ -10,13 +10,29 @@ const MoodLineChart = ({ data }) => {
     );
   }
 
-  const chartData = data.map((track, index) => ({
-    name: `${index + 1}`,
-    trackName: track.name,
-    valence: track.features?.valence ?? track.mood?.scores?.valence ?? 0,
-    energy: track.features?.energy ?? track.mood?.scores?.energy ?? 0,
-    danceability: track.features?.danceability ?? track.mood?.scores?.danceability ?? 0,
-  }));
+  // Format data for the chart
+  const chartData = data.map((item, index) => {
+    if (showAggregated && item.aggregatedFeatures) {
+      // Use aggregated features from backend
+      return {
+        date: item.date || `Day ${index + 1}`,
+        valence: item.aggregatedFeatures.valence || 0.5,
+        energy: item.aggregatedFeatures.energy || 0.5,
+        danceability: item.aggregatedFeatures.danceability || 0.5,
+        acousticness: item.aggregatedFeatures.acousticness || 0.5
+      };
+    }
+    
+    // Fallback to individual track data
+    return {
+      name: item.name || `${index + 1}`,
+      trackName: item.name || item.track || 'Unknown',
+      valence: item.features?.valence ?? item.mood?.scores?.valence ?? 0.5,
+      energy: item.features?.energy ?? item.mood?.scores?.energy ?? 0.5,
+      danceability: item.features?.danceability ?? item.mood?.scores?.danceability ?? 0.5,
+      acousticness: item.features?.acousticness ?? item.mood?.scores?.acousticness ?? 0.5
+    };
+  });
 
   return (
     <motion.div
@@ -29,18 +45,22 @@ const MoodLineChart = ({ data }) => {
         <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
           <XAxis
-            dataKey="name"
-            label={{ value: 'Track Position', position: 'insideBottom', offset: -5 }}
+            dataKey={showAggregated ? 'date' : 'name'}
+            label={{ 
+              value: showAggregated ? 'Time Period' : 'Track Position', 
+              position: 'insideBottom', 
+              offset: -5 
+            }}
             stroke="currentColor"
             opacity={0.5}
           />
           <YAxis
             domain={[0, 1]}
-            label={{ value: 'Score', angle: -90, position: 'insideLeft' }}
+            label={{ value: 'Score (0-1)', angle: -90, position: 'insideLeft' }}
             stroke="currentColor"
             opacity={0.5}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip showAggregated={showAggregated} />} />
           <Legend />
           <Line
             type="monotone"
@@ -70,21 +90,38 @@ const MoodLineChart = ({ data }) => {
             name="Danceability"
             strokeDasharray="5 5"
           />
+          <Line
+            type="monotone"
+            dataKey="acousticness"
+            stroke="#06b6d4"
+            strokeWidth={2}
+            dot={{ r: 3 }}
+            activeDot={{ r: 5 }}
+            name="Acousticness"
+            strokeDasharray="3 3"
+          />
         </LineChart>
       </ResponsiveContainer>
     </motion.div>
   );
 };
 
-const CustomTooltip = ({ active, payload }) => {
+const CustomTooltip = ({ active, payload, showAggregated }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-white dark:bg-gray-800 p-4 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700">
-        <p className="font-bold text-sm mb-2">Track #{data.name}</p>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 truncate max-w-xs">
-          {data.trackName}
+        <p className="font-bold text-sm mb-2">
+          {showAggregated 
+            ? data.date 
+            : `Track #${data.name}`
+          }
         </p>
+        {!showAggregated && data.trackName && (
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 truncate max-w-xs">
+            {data.trackName}
+          </p>
+        )}
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center justify-between gap-4 text-sm">
             <span style={{ color: entry.color }}>{entry.name}:</span>

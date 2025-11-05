@@ -13,14 +13,19 @@ export const getPlaylists = async () => {
   console.log('🎵 API: Fetching playlists...');
   const { data } = await api.get('/playlists');
   console.log('✅ API: Playlists received');
-  // Always return array, deduplicate by ID
+  
+  // CRITICAL: Always return array and deduplicate by ID
   const playlists = data.playlists || data || [];
+  
+  // Remove duplicates using Map (keeps first occurrence)
   const uniquePlaylists = Array.from(
     new Map(playlists.map(p => [p.id, p])).values()
   );
+  
+  console.log(`🔍 Deduplication: ${playlists.length} → ${uniquePlaylists.length} playlists`);
+  
   return uniquePlaylists;
 };
-
 /**
  * Get specific playlist details
  * @param {string} playlistId - Spotify playlist ID
