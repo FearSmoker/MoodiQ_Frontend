@@ -95,7 +95,7 @@ const Recommendations = () => {
       const result = await createPlaylist(
         playlistName,
         trackUris,
-        `Created by MoodiQ-AI on ${new Date().toLocaleDateString()}`,
+        `Created by MoodiQ on ${new Date().toLocaleDateString()}`,
         true
       );
 

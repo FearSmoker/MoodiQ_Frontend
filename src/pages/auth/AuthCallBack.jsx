@@ -96,7 +96,7 @@ const AuthCallback = () => {
               </div>
             </div>
             <h2 className="text-2xl font-bold mb-3 text-green-600 dark:text-green-400">
-              Welcome to MoodiQ-AI!
+              Welcome to MoodiQ!
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
               Taking you to your dashboard...

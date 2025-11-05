@@ -1,25 +1,24 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  Music,
-  Sparkles,
-  Activity,
-  TrendingUp,
-  Heart,
-  Share2,
-  Eye,
-  Radio,
-  Users,
-  BarChart3,
-  Zap,
-  ArrowRight,
-} from "lucide-react";
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  Music, Sparkles, Activity, TrendingUp, 
+  Heart, Share2, Eye, Radio,
+  Users, BarChart3, Zap, ArrowRight
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import { 
+  getDashboardOverview,
+  getNowPlaying,
+} from '../../api/analytics';
+import { 
+  getPlaylistMood
+} from '../../api/playlists';
+import { sharePlaylist } from '../../api/user';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
-  const [playlists, setPlaylists] = useState([]);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [analyzedMood, setAnalyzedMood] = useState(null);
@@ -36,30 +35,24 @@ const Dashboard = () => {
   const initDashboard = async () => {
     try {
       setLoading(true);
-      console.log("📊 Dashboard: Initializing...");
-
-      // Fetch dashboard overview and playlists in parallel
-      const [overview, playlistsData] = await Promise.all([
-        getDashboardOverview(),
-        getPlaylists()
-      ]);
+      console.log('📊 Dashboard: Initializing...');
       
+      const overview = await getDashboardOverview();
       setDashboardData(overview);
-      setPlaylists(playlistsData);
-
-      // Fetch now playing separately (non-blocking)
+      
+      // Fetch now playing separately
       try {
         const playing = await getNowPlaying();
         setNowPlaying(playing);
       } catch (err) {
-        console.log("No track currently playing");
+        console.log('No track currently playing');
       }
-
-      console.log("✅ Dashboard: Data loaded");
+      
+      console.log('✅ Dashboard: Data loaded');
     } catch (error) {
-      console.error("❌ Dashboard: Failed to load:", error);
+      console.error('❌ Dashboard: Failed to load:', error);
       if (!error.response || error.response.status !== 401) {
-        showToast("Failed to load dashboard");
+        toast.error('Failed to load dashboard', { id: 'dashboard-error' });
       }
     } finally {
       setLoading(false);
@@ -78,15 +71,15 @@ const Dashboard = () => {
   const handlePlaylistSelect = async (playlist) => {
     setSelectedPlaylist(playlist);
     setAnalyzing(true);
-
+    
     try {
-      console.log("🎵 Analyzing playlist:", playlist.name);
+      console.log('🎵 Analyzing playlist:', playlist.name);
       const moodData = await getPlaylistMood(playlist.id);
       setAnalyzedMood(moodData);
-      console.log("✅ Playlist analyzed");
+      console.log('✅ Playlist analyzed');
     } catch (error) {
-      console.error("❌ Failed to analyze:", error);
-      showToast("Failed to analyze playlist");
+      console.error('❌ Failed to analyze:', error);
+      toast.error('Failed to analyze playlist', { id: 'analyze-error' });
     } finally {
       setAnalyzing(false);
     }
@@ -94,7 +87,7 @@ const Dashboard = () => {
 
   const handleShare = async () => {
     if (!analyzedMood || !selectedPlaylist) return;
-
+    
     try {
       const result = await sharePlaylist(
         selectedPlaylist.id,
@@ -102,12 +95,12 @@ const Dashboard = () => {
         selectedPlaylist.name,
         selectedPlaylist.images?.[0]?.url
       );
-
+      
       await navigator.clipboard.writeText(result.fullUrl);
-      showToast("Share link copied!", "success");
+      toast.success('Share link copied!', { id: 'share-success' });
     } catch (error) {
-      console.error("Failed to share:", error);
-      showToast("Failed to create share link");
+      console.error('Failed to share:', error);
+      toast.error('Failed to create share link', { id: 'share-error' });
     }
   };
 
@@ -116,9 +109,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Loading your dashboard...
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -129,7 +120,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600 mb-4">Failed to load dashboard</p>
-          <button
+          <button 
             onClick={initDashboard}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
@@ -140,7 +131,7 @@ const Dashboard = () => {
     );
   }
 
-  const { user, stats, topArtists = [], topTracks = [] } = dashboardData;
+  const { user, stats, playlists, topArtists, topTracks } = dashboardData;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
@@ -151,51 +142,25 @@ const Dashboard = () => {
             Welcome back, {user?.displayName || 'User'}!
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
-
+        
         <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900 rounded-lg">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium text-green-800 dark:text-green-200">
-            Connected
-          </span>
+          <span className="text-sm font-medium text-green-800 dark:text-green-200">Connected</span>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          icon={Music}
-          label="Playlists"
-          value={stats?.totalPlaylists || 0}
-          color="indigo"
-        />
-        <StatCard
-          icon={Heart}
-          label="Saved Tracks"
-          value={stats?.totalTracks || 0}
-          color="pink"
-        />
-        <StatCard
-          icon={Share2}
-          label="Shares"
-          value={stats?.totalShares || 0}
-          color="green"
-        />
-        <StatCard
-          icon={Eye}
-          label="Total Views"
-          value={stats?.totalShareViews || 0}
-          color="purple"
-        />
+        <StatCard icon={Music} label="Playlists" value={stats?.totalPlaylists || 0} color="indigo" />
+        <StatCard icon={Heart} label="Saved Tracks" value={stats?.totalTracks || 0} color="pink" />
+        <StatCard icon={Share2} label="Shares" value={stats?.totalShares || 0} color="green" />
+        <StatCard icon={Eye} label="Total Views" value={stats?.totalShareViews || 0} color="purple" />
       </div>
 
-      {/* Now Playing */}
+      {/* Now Playing - Using ORIGINAL LOGIC */}
       {nowPlaying?.isPlaying && (
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center gap-2 mb-3">
@@ -204,18 +169,16 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             {nowPlaying.track.album?.images?.[0]?.url && (
-              <img
-                src={nowPlaying.track.album.images[0].url}
+              <img 
+                src={nowPlaying.track.album.images[0].url} 
                 alt={nowPlaying.track.album.name}
                 className="w-20 h-20 rounded-lg shadow-lg"
               />
             )}
             <div className="flex-1">
-              <h3 className="text-xl font-bold mb-1">
-                {nowPlaying.track.name}
-              </h3>
+              <h3 className="text-xl font-bold mb-1">{nowPlaying.track.name}</h3>
               <p className="text-white/80">
-                {nowPlaying.track.artists.map((a) => a.name).join(", ")}
+                {nowPlaying.track.artists.map(a => a.name).join(', ')}
               </p>
               <div className="mt-2 flex items-center gap-3">
                 {nowPlaying.mood?.fused_mood && (
@@ -233,28 +196,12 @@ const Dashboard = () => {
           </div>
           {nowPlaying.progressPercentage !== undefined && (
             <div className="mt-4 bg-white/20 rounded-full h-1">
-              <div
+              <div 
                 className="bg-white h-1 rounded-full transition-all"
                 style={{ width: `${nowPlaying.progressPercentage}%` }}
               />
             </div>
           )}
-        </div>
-      )}
-
-      {/* Live Session Badge */}
-      {dashboardData.liveSession && (
-        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-xl p-4 text-white shadow-lg">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-            <div>
-              <div className="font-semibold">Live Session Active</div>
-              <div className="text-sm text-white/80">
-                {dashboardData.liveSession.trackCount} tracks •{" "}
-                {dashboardData.liveSession.currentMood}
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -267,30 +214,30 @@ const Dashboard = () => {
               <Music className="w-5 h-5 text-indigo-600" />
               Your Playlists
             </h2>
-            <span className="text-sm text-gray-500">{playlists.length}</span>
+            <span className="text-sm text-gray-500">{playlists?.length || 0}</span>
           </div>
-
+          
           <div className="space-y-2 max-h-[600px] overflow-y-auto">
-            {playlists.length === 0 ? (
+            {!playlists || playlists.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Music className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>No playlists found</p>
               </div>
             ) : (
-              playlists.map((playlist) => (
+              playlists.map(playlist => (
                 <button
                   key={playlist.id}
                   onClick={() => handlePlaylistSelect(playlist)}
                   className={`w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left ${
-                    selectedPlaylist?.id === playlist.id
-                      ? "bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500"
-                      : ""
+                    selectedPlaylist?.id === playlist.id 
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500' 
+                      : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     {playlist.images?.[0]?.url ? (
-                      <img
-                        src={playlist.images[0].url}
+                      <img 
+                        src={playlist.images[0].url} 
                         alt={playlist.name}
                         className="w-12 h-12 rounded"
                       />
@@ -329,15 +276,13 @@ const Dashboard = () => {
                   Share
                 </button>
                 <button
-                  onClick={() =>
-                    navigate("/flow-optimizer", {
-                      state: {
-                        tracks: analyzedMood.tracks,
-                        playlistId: selectedPlaylist.id,
-                        playlistName: selectedPlaylist.name,
-                      },
-                    })
-                  }
+                  onClick={() => navigate('/flow-optimizer', { 
+                    state: { 
+                      tracks: analyzedMood.tracks,
+                      playlistId: selectedPlaylist.id,
+                      playlistName: selectedPlaylist.name 
+                    }
+                  })}
                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
                 >
                   <Zap className="w-4 h-4" />
@@ -350,9 +295,7 @@ const Dashboard = () => {
           {analyzing && (
             <div className="flex flex-col items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">
-                Analyzing playlist mood...
-              </p>
+              <p className="text-gray-600 dark:text-gray-400">Analyzing playlist mood...</p>
             </div>
           )}
 
@@ -360,9 +303,7 @@ const Dashboard = () => {
             <div className="flex flex-col items-center justify-center h-64 text-gray-500">
               <Sparkles className="w-16 h-16 mb-4 opacity-50" />
               <p className="text-lg">Select a playlist to analyze its mood</p>
-              <p className="text-sm mt-2 text-gray-400">
-                AI-powered emotional analysis
-              </p>
+              <p className="text-sm mt-2 text-gray-400">AI-powered emotional analysis</p>
             </div>
           )}
 
@@ -381,16 +322,14 @@ const Dashboard = () => {
                 <div className="space-y-3">
                   <h3 className="font-semibold">Mood Distribution</h3>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(analyzedMood.moodDistribution).map(
-                      ([mood, count]) => (
-                        <div
-                          key={mood}
-                          className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-sm font-medium"
-                        >
-                          {mood}: {count}
-                        </div>
-                      )
-                    )}
+                    {Object.entries(analyzedMood.moodDistribution).map(([mood, count]) => (
+                      <div
+                        key={mood}
+                        className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-sm font-medium"
+                      >
+                        {mood}: {count}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -399,14 +338,12 @@ const Dashboard = () => {
               <div className="space-y-2">
                 <h3 className="font-semibold">Track Moods</h3>
                 <div className="max-h-64 overflow-y-auto space-y-2">
-                  {analyzedMood.tracks.slice(0, 10).map((track, index) => (
-                    <div
+                  {analyzedMood.tracks?.slice(0, 10).map((track, index) => (
+                    <div 
                       key={index}
                       className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-gray-700"
                     >
-                      <span className="text-sm truncate flex-1">
-                        {track.name}
-                      </span>
+                      <span className="text-sm truncate flex-1">{track.name}</span>
                       <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded ml-2">
                         {track.mood}
                       </span>
@@ -428,14 +365,12 @@ const Dashboard = () => {
             Top Artists
           </h2>
           <div className="space-y-3">
-            {topArtists.slice(0, 5).map((artist, index) => (
+            {topArtists?.slice(0, 5).map((artist, index) => (
               <div key={artist.id} className="flex items-center gap-3">
-                <span className="text-lg font-bold text-gray-400 w-6">
-                  #{index + 1}
-                </span>
+                <span className="text-lg font-bold text-gray-400 w-6">#{index + 1}</span>
                 {artist.images?.[0]?.url && (
-                  <img
-                    src={artist.images[0].url}
+                  <img 
+                    src={artist.images[0].url} 
                     alt={artist.name}
                     className="w-12 h-12 rounded-full"
                   />
@@ -443,7 +378,7 @@ const Dashboard = () => {
                 <div className="flex-1">
                   <div className="font-medium">{artist.name}</div>
                   <div className="text-sm text-gray-500">
-                    {artist.genres?.slice(0, 2).join(", ") || "No genres"}
+                    {artist.genres?.slice(0, 2).join(', ') || 'No genres'}
                   </div>
                 </div>
               </div>
@@ -458,14 +393,12 @@ const Dashboard = () => {
             Top Tracks
           </h2>
           <div className="space-y-3">
-            {topTracks.slice(0, 5).map((track, index) => (
+            {topTracks?.slice(0, 5).map((track, index) => (
               <div key={track.id} className="flex items-center gap-3">
-                <span className="text-lg font-bold text-gray-400 w-6">
-                  #{index + 1}
-                </span>
+                <span className="text-lg font-bold text-gray-400 w-6">#{index + 1}</span>
                 {track.album?.images?.[0]?.url && (
-                  <img
-                    src={track.album.images[0].url}
+                  <img 
+                    src={track.album.images[0].url} 
                     alt={track.album.name}
                     className="w-12 h-12 rounded"
                   />
@@ -473,7 +406,7 @@ const Dashboard = () => {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{track.name}</div>
                   <div className="text-sm text-gray-500 truncate">
-                    {track.artists?.map((a) => a.name).join(", ")}
+                    {track.artists?.map(a => a.name).join(', ')}
                   </div>
                 </div>
               </div>
@@ -484,28 +417,28 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid md:grid-cols-4 gap-4">
-        <QuickActionCard
+        <QuickActionCard 
           icon={Sparkles}
           title="Generate Playlist"
           description="Create mood-based playlists"
           to="/mood-generator"
           color="purple"
         />
-        <QuickActionCard
+        <QuickActionCard 
           icon={Activity}
           title="Analytics"
           description="Detailed listening insights"
           to="/mood-analyzer"
           color="blue"
         />
-        <QuickActionCard
+        <QuickActionCard 
           icon={BarChart3}
           title="Recommendations"
           description="Discover new music"
           to="/recommendations"
           color="green"
         />
-        <QuickActionCard
+        <QuickActionCard 
           icon={Zap}
           title="Flow Optimizer"
           description="Perfect transitions"
@@ -517,59 +450,17 @@ const Dashboard = () => {
   );
 };
 
-// Mock functions - replace with your actual API imports
-const getDashboardOverview = async () => {
-  return {
-    user: { displayName: "John Doe" },
-    stats: {
-      totalPlaylists: 42,
-      totalTracks: 1234,
-      totalShares: 15,
-      totalShareViews: 347
-    },
-    topArtists: [],
-    topTracks: [],
-    liveSession: null
-  };
-};
-
-const getNowPlaying = async () => {
-  throw new Error("Not playing");
-};
-
-const getPlaylists = async () => {
-  return [];
-};
-
-const getPlaylistMood = async (id) => {
-  return {
-    overallMood: "Energetic",
-    moodDistribution: { Happy: 5, Energetic: 8, Calm: 2 },
-    tracks: []
-  };
-};
-
-const sharePlaylist = async (id, mood, name, image) => {
-  return { fullUrl: "https://example.com/share/123" };
-};
-
-const showToast = (message, type = "error") => {
-  console.log(`[${type}] ${message}`);
-};
-
 // Stat Card Component
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const colors = {
-    indigo: "from-indigo-500 to-purple-500",
-    pink: "from-pink-500 to-rose-500",
-    green: "from-green-500 to-emerald-500",
-    purple: "from-purple-500 to-pink-500",
+    indigo: 'from-indigo-500 to-purple-500',
+    pink: 'from-pink-500 to-rose-500',
+    green: 'from-green-500 to-emerald-500',
+    purple: 'from-purple-500 to-pink-500',
   };
 
   return (
-    <div
-      className={`bg-gradient-to-br ${colors[color]} rounded-xl p-4 text-white shadow-lg`}
-    >
+    <div className={`bg-gradient-to-br ${colors[color]} rounded-xl p-4 text-white shadow-lg`}>
       <Icon className="w-6 h-6 mb-2 opacity-80" />
       <div className="text-3xl font-bold mb-1">{value.toLocaleString()}</div>
       <div className="text-sm opacity-90">{label}</div>
@@ -580,26 +471,24 @@ const StatCard = ({ icon: Icon, label, value, color }) => {
 // Quick Action Card Component
 const QuickActionCard = ({ icon: Icon, title, description, to, color }) => {
   const colors = {
-    purple: "from-purple-500 to-pink-500",
-    blue: "from-blue-500 to-indigo-500",
-    green: "from-green-500 to-emerald-500",
-    pink: "from-pink-500 to-rose-500",
+    purple: 'from-purple-500 to-pink-500',
+    blue: 'from-blue-500 to-indigo-500',
+    green: 'from-green-500 to-emerald-500',
+    pink: 'from-pink-500 to-rose-500',
   };
 
   return (
-    <a
-      href={to}
+    <Link 
+      to={to}
       className="group bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
     >
-      <div
-        className={`w-12 h-12 bg-gradient-to-br ${colors[color]} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
-      >
+      <div className={`w-12 h-12 bg-gradient-to-br ${colors[color]} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
         <Icon className="w-6 h-6 text-white" />
       </div>
       <h3 className="font-bold mb-1">{title}</h3>
       <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
       <ArrowRight className="w-5 h-5 mt-3 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
-    </a>
+    </Link>
   );
 };
 

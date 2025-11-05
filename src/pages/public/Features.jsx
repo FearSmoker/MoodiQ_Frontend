@@ -61,7 +61,7 @@ const Features = () => {
             Powerful Features for Your Music
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            Discover all the amazing capabilities of MoodiQ-AI to transform your music listening experience
+            Discover all the amazing capabilities of MoodiQ to transform your music listening experience
           </p>
         </div>
 

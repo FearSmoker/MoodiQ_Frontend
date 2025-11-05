@@ -269,7 +269,7 @@ const Home = () => {
             Ready to Transform Your Music?
           </h2>
           <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-            Join thousands of music lovers using MoodiQ-AI to discover the emotions in their playlists.
+            Join thousands of music lovers using MoodiQ to discover the emotions in their playlists.
           </p>
           <button
             onClick={handleLogin}
