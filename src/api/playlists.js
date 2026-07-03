@@ -110,6 +110,33 @@ export const fillMoodGaps = async (tracks) => {
 };
 
 /**
+ * Fill mood gaps with TARGETED Spotify catalog bridge tracks (per-gap)
+ * Returns gapFills array: each entry has position + up to 2 bridge tracks
+ * @param {Array} tracks - Array of track objects
+ * @param {number} threshold - Gap detection threshold (default: 0.3)
+ */
+export const fillGapsWithSpotify = async (tracks, threshold = 0.3) => {
+  console.log(`🎸 API: Smart gap fill with Spotify catalog (${tracks.length} tracks)...`);
+  const { data } = await api.post('/playlists/fill-gaps-smart', { tracks, threshold });
+  console.log('✅ API: Smart gap fill complete');
+  return data;
+};
+
+/**
+ * Optimize playlist flow: picks existing tracks fitting the startMood→endMood arc,
+ * then fills gaps with Spotify catalog tracks. If <30% fit, generates a fresh playlist.
+ * @param {Array} tracks - Current track list (with .features)
+ * @param {string} startMood - e.g. 'Joyful'
+ * @param {string} endMood   - e.g. 'Romantic'
+ */
+export const optimizeAndEnrichFlow = async (tracks, startMood, endMood) => {
+  console.log(`🤖 API: Optimize+Enrich (${tracks.length} tracks, ${startMood}→${endMood})...`);
+  const { data } = await api.post('/playlists/optimize-enrich', { tracks, startMood, endMood });
+  console.log(`✅ API: Optimize+Enrich done — mode=${data.mode}`);
+  return data;
+};
+
+/**
  * ============================================
  * PLAYLIST GENERATION (HYBRID ML)
  * ============================================

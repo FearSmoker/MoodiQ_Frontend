@@ -80,20 +80,62 @@ const Playlists = () => {
     }
   };
 
+  /**
+   * Normalise track shape before passing to FlowOptimizer.
+   * The backend's normalizeTrackForFlow already does this, but cached
+   * responses from before the fix might still arrive in the old shape.
+   * This is a cheap O(n) safety pass on the frontend.
+   */
+  const normalizeTracksForOptimizer = (tracks) => {
+    if (!Array.isArray(tracks)) return [];
+    return tracks.map(t => {
+      // artists: ensure array of {name} objects
+      let artists = t.artists;
+      if (!Array.isArray(artists) || artists.length === 0) {
+        artists = [{ name: t.artist || 'Unknown Artist' }];
+      }
+
+      // album: ensure { name, images:[] } shape
+      let album = t.album;
+      if (typeof album === 'string' || !album) {
+        album = {
+          name: typeof album === 'string' ? album : '',
+          images: Array.isArray(t.images) ? t.images : [],
+        };
+      } else if (!Array.isArray(album.images)) {
+        album = { ...album, images: [] };
+      }
+
+      // mood: ensure string
+      const mood =
+        typeof t.mood === 'string'
+          ? t.mood
+          : t.moodDetails?.primary_mood || t.primary_mood || 'Unknown';
+
+      // features: prefer explicit features, fall back to moodDetails scores
+      const features = t.features || t.moodDetails?.scores || null;
+
+      return { ...t, artists, album, mood, features };
+    });
+  };
+
   const handleOptimizeFlow = (playlist, moodAnalysis) => {
-    if (!moodAnalysis || !moodAnalysis.tracks) {
+    if (!moodAnalysis || !moodAnalysis.tracks || !moodAnalysis.tracks.length) {
       toast.error('Please analyze the playlist first', { id: 'opt-error' });
       return;
     }
 
+    const normalizedTracks = normalizeTracksForOptimizer(moodAnalysis.tracks);
+
     navigate('/flow-optimizer', {
       state: {
-        tracks: moodAnalysis.tracks,
+        tracks: normalizedTracks,
         playlistId: playlist.id,
-        playlistName: playlist.name
+        playlistName: playlist.name,
       }
     });
   };
+
 
   const handleShare = async (playlist, moodAnalysis) => {
     if (!moodAnalysis) {
@@ -228,19 +270,22 @@ const Playlists = () => {
                     className="w-full justify-center"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Analyze Mood
+                    {moodData ? 'Re-analyze Mood' : 'Analyze Mood'}
                   </Button>
 
-                  {moodData && (
+                  {moodData && moodData.tracks?.length > 0 && (
                     <>
-                      <Button
+                      {/* Prominent Optimize Flow CTA */}
+                      <button
                         onClick={() => handleOptimizeFlow(selectedPlaylist, moodData)}
-                        variant="secondary"
-                        className="w-full justify-center"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all active:scale-95"
                       >
-                        <TrendingUp className="w-4 h-4 mr-2" />
+                        <TrendingUp className="w-4 h-4" />
                         Optimize Flow
-                      </Button>
+                        <svg className="w-4 h-4 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
 
                       <Button
                         onClick={() => handleShare(selectedPlaylist, moodData)}
@@ -252,6 +297,12 @@ const Playlists = () => {
                         Share
                       </Button>
                     </>
+                  )}
+
+                  {moodData && !moodData.tracks?.length && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 text-center py-1">
+                      ⚠️ No track data returned — try re-analyzing
+                    </p>
                   )}
 
                   <a
