@@ -33,12 +33,9 @@ const Settings = () => {
   const { user, refreshUser } = useAuth();
   const { linkedServices, linkYouTube, unlinkService, isServiceLinked, loading: serviceLoading } = useServiceAuth();
   
-  const [preferences, setPreferences] = useState({
-    moodSensitivity: 0.5,
-    autoOptimizeFlow: false,
-    defaultPlaylistPrivacy: 'public',
-    notifications: true,
-  });
+  // Initialize to null — never save until API data is loaded
+  const [preferences, setPreferences] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [userStats, setUserStats] = useState(null);
@@ -58,17 +55,24 @@ const Settings = () => {
       setLoading(true);
       console.log('⚙️ Fetching user preferences...');
       const data = await getPreferences();
-      if (data.preferences) {
-        setPreferences(data.preferences);
-      }
+      // Merge API data with sensible defaults — only after real API load
+      setPreferences({
+        moodSensitivity: 0.5,
+        autoOptimizeFlow: false,
+        defaultPlaylistPrivacy: 'public',
+        notifications: true,
+        ...(data.preferences || {}),
+      });
       console.log('✅ Preferences loaded');
     } catch (error) {
       console.error('Failed to fetch preferences:', error);
       toast.error('Failed to load preferences', { id: 'pref-error' });
+      // Leave as null so the form stays disabled
     } finally {
       setLoading(false);
     }
   };
+
 
   const fetchUserStats = async () => {
     try {
@@ -96,6 +100,11 @@ const Settings = () => {
   };
 
   const handleSavePreferences = async () => {
+    // Guard: don't allow saving if preferences haven't loaded from API
+    if (!preferences) {
+      toast.error('Preferences not loaded yet. Please wait.', { id: 'pref-not-loaded' });
+      return;
+    }
     try {
       setSaving(true);
       console.log('💾 Saving preferences...');
@@ -422,6 +431,13 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
+          {!preferences ? (
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading preferences...</span>
+            </div>
+          ) : (<>
+
           {/* Mood Sensitivity */}
           <div>
             <label className="block text-sm font-medium mb-3">
@@ -492,10 +508,12 @@ const Settings = () => {
               </button>
             </div>
           </div>
+          </>)}
         </div>
       </div>
 
       {/* Notifications */}
+      {preferences && (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <Bell className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
@@ -523,14 +541,16 @@ const Settings = () => {
           </button>
         </div>
       </div>
+      )}
 
       {/* Save Button */}
       <div className="flex justify-end">
         <Button
           onClick={handleSavePreferences}
           isLoading={saving}
+          disabled={!preferences || saving}
         >
-          Save Preferences
+          {!preferences ? 'Loading...' : 'Save Preferences'}
         </Button>
       </div>
     </div>

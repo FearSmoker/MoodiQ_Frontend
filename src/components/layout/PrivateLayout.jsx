@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../hooks/useSocket';
 import { 
   LayoutDashboard, 
   Music, 
@@ -27,6 +28,9 @@ const PrivateLayout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Initialize real-time WebSocket connection
+  useSocket();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },

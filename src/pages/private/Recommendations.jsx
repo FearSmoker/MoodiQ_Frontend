@@ -1,15 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Music, Zap, ThumbsUp, ThumbsDown, Plus, ExternalLink, Sliders } from 'lucide-react';
-import { getRecommendations, createPlaylist } from '../../api/playlists';
-import { getDashboardRecommendations } from '../../api/analytics';
+import { Sparkles, Music, Zap, ThumbsUp, ThumbsDown, Plus, ExternalLink, Sliders, RefreshCw } from 'lucide-react';
+import api from '../../api/client';
+import { createPlaylist } from '../../api/playlists';
 import { submitFeedback } from '../../api/user';
 import { Button } from '../../components/ui/Button';
 import { Loader } from '../../components/ui/Loader';
 import toast from 'react-hot-toast';
 
+const MOODS = [
+  { label: 'Any', value: null, emoji: '🎵' },
+  { label: 'Joyful', value: 'Joyful', emoji: '😄' },
+  { label: 'Excited', value: 'Excited', emoji: '🤩' },
+  { label: 'Party', value: 'Party', emoji: '🎉' },
+  { label: 'Chill', value: 'Chill', emoji: '😎' },
+  { label: 'Relaxed', value: 'Relaxed', emoji: '😌' },
+  { label: 'Melancholic', value: 'Melancholic', emoji: '😔' },
+  { label: 'Focused', value: 'Focused', emoji: '🎯' },
+  { label: 'Motivated', value: 'Motivated', emoji: '💪' },
+  { label: 'Romantic', value: 'Romantic', emoji: '❤️' },
+  { label: 'Dreamy', value: 'Dreamy', emoji: '💭' },
+  { label: 'Angry', value: 'Angry', emoji: '😠' },
+  { label: 'Ambient', value: 'Ambient', emoji: '🌊' },
+];
+
+// Fetch from the new Spotify-native endpoint
+const getSpotifyRecommendations = async ({ limit, mood, valence, energy }) => {
+  const params = new URLSearchParams({ limit });
+  if (mood) params.set('mood', mood);
+  if (valence !== null && valence !== undefined) params.set('valence', valence);
+  if (energy !== null && energy !== undefined) params.set('energy', energy);
+  const { data } = await api.get(`/playlists/recommendations/spotify?${params.toString()}`);
+  return data;
+};
+
 const Recommendations = () => {
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [selectedTracks, setSelectedTracks] = useState(new Set());
   const [playlistName, setPlaylistName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -17,27 +44,33 @@ const Recommendations = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter options
-  const [targetValence, setTargetValence] = useState(0.5);
-  const [targetEnergy, setTargetEnergy] = useState(0.5);
+  const [selectedMood, setSelectedMood] = useState(null);
+  const [targetValence, setTargetValence] = useState(null);
+  const [targetEnergy, setTargetEnergy] = useState(null);
   const [limit, setLimit] = useState(30);
 
   useEffect(() => {
-    fetchInitialRecommendations();
-  }, []);
+    fetchRecommendations();
+  }, [selectedMood, targetValence, targetEnergy, limit]);
 
-  const fetchInitialRecommendations = async () => {
+
+  const fetchRecommendations = async (opts = {}) => {
     try {
       setLoading(true);
-      console.log('🎯 Fetching personalized recommendations...');
-      
-      const result = await getRecommendations(limit);
+      console.log('🎯 Fetching Spotify-native recommendations...');
+      const result = await getSpotifyRecommendations({
+        limit: opts.limit ?? limit,
+        mood: opts.mood ?? selectedMood,
+        valence: opts.valence ?? targetValence,
+        energy: opts.energy ?? targetEnergy,
+      });
       setRecommendations(result.tracks || []);
+      setMeta(result);
       setPlaylistName(`Recommendations - ${new Date().toLocaleDateString()}`);
-      
       console.log(`✅ Loaded ${result.tracks?.length || 0} recommendations`);
     } catch (error) {
       console.error('Failed to load recommendations:', error);
-      toast.error('Failed to load recommendations', { id: 'rec-error' });
+      toast.error('Failed to load recommendations. Make sure Spotify is connected.', { id: 'rec-error' });
     } finally {
       setLoading(false);
     }
@@ -46,10 +79,9 @@ const Recommendations = () => {
   const handleRefreshRecommendations = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Refreshing recommendations with custom filters...');
-      
-      const result = await getRecommendations(limit);
+      const result = await getSpotifyRecommendations({ limit, mood: selectedMood, valence: targetValence, energy: targetEnergy });
       setRecommendations(result.tracks || []);
+      setMeta(result);
       toast.success('Recommendations updated!', { id: 'refresh-success' });
     } catch (error) {
       console.error('Failed to refresh recommendations:', error);
@@ -58,6 +90,11 @@ const Recommendations = () => {
       setLoading(false);
     }
   };
+
+  const handleMoodSelect = (moodValue) => {
+    setSelectedMood(moodValue);
+  };
+
 
   const handleTrackSelect = (trackId) => {
     const newSelected = new Set(selectedTracks);
@@ -153,21 +190,41 @@ const Recommendations = () => {
             {showFilters ? 'Hide' : 'Show'} Filters
           </button>
         </div>
-        
+
+        {/* Mood Chips — always visible */}
+        <div>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Filter by Mood</p>
+          <div className="flex flex-wrap gap-2">
+            {MOODS.map(mood => (
+              <button
+                key={mood.label}
+                onClick={() => handleMoodSelect(mood.value)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedMood === mood.value
+                    ? 'bg-indigo-600 text-white shadow-md scale-105'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {mood.emoji} {mood.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {showFilters && (
           <>
-            {/* Mood Sliders */}
+            {/* Audio Sliders */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-3">
-                  Positivity (Valence): {Math.round(targetValence * 100)}%
+                  Positivity (Valence): {targetValence !== null ? Math.round(targetValence * 100) + '%' : 'Auto'}
                 </label>
                 <input
                   type="range"
                   min="0"
                   max="1"
                   step="0.1"
-                  value={targetValence}
+                  value={targetValence ?? 0.5}
                   onChange={(e) => setTargetValence(parseFloat(e.target.value))}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
                 />
@@ -179,14 +236,14 @@ const Recommendations = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-3">
-                  Energy Level: {Math.round(targetEnergy * 100)}%
+                  Energy Level: {targetEnergy !== null ? Math.round(targetEnergy * 100) + '%' : 'Auto'}
                 </label>
                 <input
                   type="range"
                   min="0"
                   max="1"
                   step="0.1"
-                  value={targetEnergy}
+                  value={targetEnergy ?? 0.5}
                   onChange={(e) => setTargetEnergy(parseFloat(e.target.value))}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
                 />
@@ -216,13 +273,21 @@ const Recommendations = () => {
                 <span>50</span>
               </div>
             </div>
-
-            <Button onClick={handleRefreshRecommendations} isLoading={loading}>
-              <Zap className="w-5 h-5 mr-2" />
-              Get Fresh Recommendations
-            </Button>
           </>
         )}
+
+        <div className="flex items-center gap-4">
+          <Button onClick={handleRefreshRecommendations} isLoading={loading}>
+            <Zap className="w-5 h-5 mr-2" />
+            Get Recommendations
+          </Button>
+          {meta && (
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {meta.metadata?.tracksAnalyzed || 0} tracks analyzed • {meta.total || 0} matched
+              {meta.dominantMood && ` • Dominant: ${meta.dominantMood}`}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Selected Tracks Summary */}

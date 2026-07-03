@@ -12,11 +12,9 @@ import api from './client';
  * @param {number} days - Number of days to analyze
  */
 export const getMoodTrends = async (limit = 50, days = 7) => {
-  console.log(`📊 API: Fetching mood trends (${limit} tracks, ${days} days)...`);
   const { data } = await api.get('/analytics/mood-trends', {
     params: { limit, days }
   });
-  console.log('✅ API: Mood trends received');
   return data;
 };
 
@@ -24,9 +22,7 @@ export const getMoodTrends = async (limit = 50, days = 7) => {
  * Get mood distribution (12-mood system)
  */
 export const getMoodDistribution = async () => {
-  console.log('📊 API: Fetching mood distribution...');
   const { data } = await api.get('/analytics/mood-distribution');
-  console.log('✅ API: Mood distribution received');
   return data;
 };
 
@@ -34,9 +30,7 @@ export const getMoodDistribution = async () => {
  * Get mood patterns (co-occurrence analysis)
  */
 export const getMoodPatterns = async () => {
-  console.log('🔍 API: Fetching mood patterns...');
   const { data } = await api.get('/analytics/mood-patterns');
-  console.log('✅ API: Mood patterns received');
   return data;
 };
 
@@ -44,9 +38,7 @@ export const getMoodPatterns = async () => {
  * Get listening activity analytics
  */
 export const getActivityAnalytics = async () => {
-  console.log('📊 API: Fetching activity analytics...');
   const { data } = await api.get('/analytics/activity');
-  console.log('✅ API: Activity analytics received');
   return data;
 };
 
@@ -55,11 +47,9 @@ export const getActivityAnalytics = async () => {
  * @param {string} timeRange - 'short_term', 'medium_term', or 'long_term'
  */
 export const getGenreAnalysis = async (timeRange = 'medium_term') => {
-  console.log(`🎸 API: Fetching genre analysis (${timeRange})...`);
   const { data } = await api.get('/analytics/genres', {
     params: { timeRange }
   });
-  console.log('✅ API: Genre analysis received');
   return data;
 };
 
@@ -68,11 +58,9 @@ export const getGenreAnalysis = async (timeRange = 'medium_term') => {
  * @param {number} days - Number of days (default: 7)
  */
 export const getMoodTimeline = async (days = 7) => {
-  console.log(`📈 API: Fetching mood timeline (${days} days)...`);
   const { data } = await api.get('/analytics/mood-timeline', {
     params: { days }
   });
-  console.log('✅ API: Mood timeline received');
   return data;
 };
 
@@ -80,9 +68,7 @@ export const getMoodTimeline = async (days = 7) => {
  * Get real-time current track analysis (ENHANCED)
  */
 export const getRealtimeAnalysis = async () => {
-  console.log('⚡ API: Fetching real-time analysis...');
   const { data } = await api.get('/analytics/realtime');
-  console.log('✅ API: Real-time analysis received');
   return data;
 };
 
@@ -90,11 +76,9 @@ export const getRealtimeAnalysis = async () => {
  * Get global mood trends
  */
 export const getGlobalMoodTrends = async (limit = 100) => {
-  console.log('🌍 API: Fetching global mood trends...');
   const { data } = await api.get('/analytics/global-trends', {
     params: { limit }
   });
-  console.log('✅ API: Global trends received');
   return data;
 };
 
@@ -103,9 +87,7 @@ export const getGlobalMoodTrends = async (limit = 100) => {
  * @param {string} userId - User ID
  */
 export const getLiveSessionAnalytics = async (userId) => {
-  console.log(`🎧 API: Fetching live session for ${userId}...`);
   const { data } = await api.get(`/analytics/live-session/${userId}`);
-  console.log('✅ API: Live session received');
   return data;
 };
 
@@ -119,9 +101,7 @@ export const getLiveSessionAnalytics = async (userId) => {
  * Get complete dashboard overview (ML-enhanced)
  */
 export const getDashboardOverview = async () => {
-  console.log('📊 API: Fetching dashboard overview...');
   const { data } = await api.get('/dashboard/overview');
-  console.log('✅ API: Dashboard overview received');
   return data;
 };
 
@@ -129,11 +109,9 @@ export const getDashboardOverview = async () => {
  * Get detailed listening statistics
  */
 export const getListeningStats = async (timeRange = 'medium_term') => {
-  console.log(`📊 API: Fetching listening stats (${timeRange})...`);
   const { data } = await api.get('/dashboard/listening-stats', {
     params: { timeRange }
   });
-  console.log('✅ API: Listening stats received');
   return data;
 };
 
@@ -141,9 +119,7 @@ export const getListeningStats = async (timeRange = 'medium_term') => {
  * Get currently playing track with ML mood analysis
  */
 export const getNowPlaying = async () => {
-  console.log('🎵 API: Fetching now playing...');
   const { data } = await api.get('/dashboard/now-playing');
-  console.log('✅ API: Now playing received');
   return data;
 };
 
@@ -151,11 +127,9 @@ export const getNowPlaying = async () => {
  * Get personalized recommendations (ML-powered)
  */
 export const getDashboardRecommendations = async (limit = 20) => {
-  console.log('💡 API: Fetching personalized recommendations...');
   const { data } = await api.get('/dashboard/recommendations', {
     params: { limit }
   });
-  console.log('✅ API: Recommendations received');
   return data;
 };
 
@@ -169,9 +143,7 @@ export const getDashboardRecommendations = async (limit = 20) => {
  * Start a new live listening session
  */
 export const startLiveSession = async () => {
-  console.log('🎧 API: Starting live session...');
   const { data } = await api.post('/live/session/start');
-  console.log('✅ API: Live session started');
   return data;
 };
 
@@ -179,14 +151,12 @@ export const startLiveSession = async () => {
  * Add track to live session
  */
 export const addTrackToLiveSession = async (sessionId, trackId, trackName, artistName) => {
-  console.log(`➕ API: Adding track to session...`);
   const { data } = await api.post('/live/session/add-track', {
     sessionId,
     trackId,
     trackName,
     artistName
   });
-  console.log('✅ API: Track added to session');
   return data;
 };
 
@@ -194,9 +164,7 @@ export const addTrackToLiveSession = async (sessionId, trackId, trackName, artis
  * Get current live session
  */
 export const getCurrentLiveSession = async () => {
-  console.log('📊 API: Fetching current live session...');
   const { data } = await api.get('/live/session/current');
-  console.log('✅ API: Current session received');
   return data;
 };
 
@@ -204,9 +172,7 @@ export const getCurrentLiveSession = async () => {
  * End live session
  */
 export const endLiveSession = async (sessionId) => {
-  console.log('🛑 API: Ending live session...');
   const { data } = await api.post('/live/session/end', { sessionId });
-  console.log('✅ API: Session ended');
   return data;
 };
 
@@ -214,9 +180,7 @@ export const endLiveSession = async (sessionId) => {
  * Auto-check session for inactivity
  */
 export const autoCheckLiveSession = async () => {
-  console.log('⏰ API: Auto-checking session...');
   const { data } = await api.post('/live/session/auto-check');
-  console.log('✅ API: Session checked');
   return data;
 };
 

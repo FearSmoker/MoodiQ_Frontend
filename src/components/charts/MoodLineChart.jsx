@@ -12,14 +12,14 @@ const MoodLineChart = ({ data, showAggregated = false }) => {
 
   // Format data for the chart
   const chartData = data.map((item, index) => {
-    if (showAggregated && item.aggregatedFeatures) {
-      // Use aggregated features from backend
+    if (showAggregated) {
+      // Support both flat aggregated objects and nested aggregatedFeatures objects
       return {
         date: item.date || `Day ${index + 1}`,
-        valence: item.aggregatedFeatures.valence || 0.5,
-        energy: item.aggregatedFeatures.energy || 0.5,
-        danceability: item.aggregatedFeatures.danceability || 0.5,
-        acousticness: item.aggregatedFeatures.acousticness || 0.5
+        valence: item.valence ?? item.aggregatedFeatures?.valence ?? 0.5,
+        energy: item.energy ?? item.aggregatedFeatures?.energy ?? 0.5,
+        danceability: item.danceability ?? item.aggregatedFeatures?.danceability ?? 0.5,
+        acousticness: item.acousticness ?? item.aggregatedFeatures?.acousticness ?? 0.5
       };
     }
     

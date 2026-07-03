@@ -59,9 +59,10 @@ const PlaylistTransfer = () => {
               <CheckCircle className="w-6 h-6 text-green-500" />
             ) : (
               <button
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                disabled={true}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg opacity-50 cursor-not-allowed"
               >
-                Connect
+                Coming Soon
               </button>
             )}
           </div>

@@ -33,16 +33,16 @@ const FlowOptimizer = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDetectingGaps, setIsDetectingGaps] = useState(false);
   const [isFillingGaps, setIsFillingGaps] = useState(false);
-  const [startMood, setStartMood] = useState('Calm');
-  const [endMood, setEndMood] = useState('Happy');
+  const [startMood, setStartMood] = useState('Chill');
+  const [endMood, setEndMood] = useState('Joyful');
   const [algorithm, setAlgorithm] = useState('dynamic_programming');
   const [moodGaps, setMoodGaps] = useState(null);
   const [gapRecommendations, setGapRecommendations] = useState(null);
   const [flowScore, setFlowScore] = useState(null);
 
   const MOOD_OPTIONS = [
-    'Happy', 'Sad', 'Calm', 'Energetic', 'Angry', 
-    'Relaxed', 'Romantic', 'Focus', 'Melancholy'
+    'Joyful', 'Excited', 'Party', 'Melancholic', 'Dreamy',
+    'Relaxed', 'Chill', 'Focused', 'Romantic', 'Motivated', 'Angry', 'Ambient'
   ];
 
   const ALGORITHMS = [
@@ -125,7 +125,9 @@ const FlowOptimizer = () => {
       const result = await detectMoodGaps(tracks, 1.5);
       setMoodGaps(result);
       
-      if (result.gaps && result.gaps.length > 0) {
+      if (result.analysis_incomplete) {
+        toast.error('Could not analyze mood gaps: these tracks are missing mood data. Try re-analyzing the playlist.', { id: 'gap-error' });
+      } else if (result.gaps && result.gaps.length > 0) {
         toast.success(`Found ${result.gaps.length} mood gaps!`, { id: 'gap-success' });
       } else {
         toast.info('No significant mood gaps detected', { id: 'gap-info' });

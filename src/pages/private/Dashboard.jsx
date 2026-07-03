@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Music, Sparkles, Activity, TrendingUp, 
@@ -14,6 +14,8 @@ import {
   getPlaylistMood
 } from '../../api/playlists';
 import { sharePlaylist } from '../../api/user';
+import MoodLineChart from '../../components/charts/MoodLineChart';
+import MoodCloud from '../../components/charts/MoodCloud';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,19 +26,75 @@ const Dashboard = () => {
   const [analyzedMood, setAnalyzedMood] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
 
+  const [localProgress, setLocalProgress] = useState(0);
+  const [localDuration, setLocalDuration] = useState(0);
+  const lastTickRef = useRef(0); // wall-clock time of the last local tick, for drift-free ticking
+
+  // Every server push (track change, play/pause, seek, or periodic
+  // heartbeat) is authoritative — snap straight to it instead of trying
+  // to guess whether it "looks like" a seek. The backend already only
+  // sends updates when something meaningful changed, so trusting every
+  // message here is what makes rewinds/skips reflect instantly.
+  useEffect(() => {
+    if (nowPlaying?.track) {
+      setLocalProgress(nowPlaying.track.progress || 0);
+      setLocalDuration(nowPlaying.track.duration || 0);
+      lastTickRef.current = Date.now();
+    } else {
+      setLocalProgress(0);
+      setLocalDuration(0);
+    }
+  }, [nowPlaying]);
+
+  // Smooth client-side progress ticker, using real elapsed wall-clock
+  // time (not an assumed fixed step) so it can't drift ahead of or
+  // behind actual playback between server updates.
+  useEffect(() => {
+    if (!nowPlaying?.isPlaying) return;
+    lastTickRef.current = Date.now();
+
+    const progressInterval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - lastTickRef.current;
+      lastTickRef.current = now;
+
+      setLocalProgress(prev => {
+        const next = prev + elapsed;
+        return next >= localDuration ? prev : next;
+      });
+    }, 250);
+
+    return () => clearInterval(progressInterval);
+  }, [nowPlaying?.isPlaying, nowPlaying?.track?.id, localDuration]);
+
+  const formatTime = (ms) => {
+    const totalSecs = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   useEffect(() => {
     initDashboard();
     
-    // Poll now playing every 10 seconds
-    const interval = setInterval(fetchNowPlaying, 10000);
-    return () => clearInterval(interval);
+    // Listen to real-time playback state updates via CustomEvent
+    const handleWsMessage = (event) => {
+      const message = event.detail;
+      if (message.type === 'now_playing_update') {
+        setNowPlaying(message.data);
+      }
+    };
+    window.addEventListener('ws-message', handleWsMessage);
+    
+    return () => {
+      window.removeEventListener('ws-message', handleWsMessage);
+    };
   }, []);
 
   const initDashboard = async () => {
     try {
       setLoading(true);
-      console.log('📊 Dashboard: Initializing...');
-      
+
       const overview = await getDashboardOverview();
       setDashboardData(overview);
       
@@ -45,12 +103,10 @@ const Dashboard = () => {
         const playing = await getNowPlaying();
         setNowPlaying(playing);
       } catch (err) {
-        console.log('No track currently playing');
+        // No track currently playing
       }
-      
-      console.log('✅ Dashboard: Data loaded');
     } catch (error) {
-      console.error('❌ Dashboard: Failed to load:', error);
+      console.error('Dashboard: Failed to load:', error);
       if (!error.response || error.response.status !== 401) {
         toast.error('Failed to load dashboard', { id: 'dashboard-error' });
       }
@@ -73,12 +129,10 @@ const Dashboard = () => {
     setAnalyzing(true);
     
     try {
-      console.log('🎵 Analyzing playlist:', playlist.name);
       const moodData = await getPlaylistMood(playlist.id);
       setAnalyzedMood(moodData);
-      console.log('✅ Playlist analyzed');
     } catch (error) {
-      console.error('❌ Failed to analyze:', error);
+      console.error('Failed to analyze playlist:', error);
       toast.error('Failed to analyze playlist', { id: 'analyze-error' });
     } finally {
       setAnalyzing(false);
@@ -99,7 +153,7 @@ const Dashboard = () => {
       await navigator.clipboard.writeText(result.fullUrl);
       toast.success('Share link copied!', { id: 'share-success' });
     } catch (error) {
-      console.error('Failed to share:', error);
+      console.error('Failed to share playlist:', error);
       toast.error('Failed to create share link', { id: 'share-error' });
     }
   };
@@ -194,12 +248,18 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          {nowPlaying.progressPercentage !== undefined && (
-            <div className="mt-4 bg-white/20 rounded-full h-1">
-              <div 
-                className="bg-white h-1 rounded-full transition-all"
-                style={{ width: `${nowPlaying.progressPercentage}%` }}
-              />
+          {localDuration > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-white/80 mb-1 font-mono">
+                <span>{formatTime(localProgress)}</span>
+                <span>{formatTime(localDuration)}</span>
+              </div>
+              <div className="bg-white/25 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className="bg-white h-full rounded-full transition-all duration-200 ease-linear"
+                  style={{ width: `${localDuration > 0 ? Math.min((localProgress / localDuration) * 100, 100) : 0}%` }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -330,6 +390,19 @@ const Dashboard = () => {
                         {mood}: {count}
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Visualizations Grid */}
+              {analyzedMood.tracks && analyzedMood.tracks.length > 0 && (
+                <div className="grid md:grid-cols-2 gap-6">
+                  <MoodCloud moodData={analyzedMood.tracks} />
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow flex flex-col">
+                    <h3 className="text-xl font-semibold mb-4">Emotional Timeline</h3>
+                    <div className="flex-grow min-h-[200px]">
+                      <MoodLineChart data={analyzedMood.tracks} showAggregated={false} />
+                    </div>
                   </div>
                 </div>
               )}

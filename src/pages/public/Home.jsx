@@ -109,11 +109,6 @@ const Home = () => {
     },
   ];
 
-  const stats = [
-    { value: '50K+', label: 'Playlists Analyzed' },
-    { value: '10K+', label: 'Happy Users' },
-    { value: '1M+', label: 'Songs Processed' },
-  ];
 
   return (
     <div className="min-h-screen">
@@ -160,15 +155,6 @@ const Home = () => {
               </Link>
             </div>
 
-            {/* Stats */}
-            <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold mb-1">{stat.value}</div>
-                  <div className="text-sm text-white/80">{stat.label}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 

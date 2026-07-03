@@ -67,7 +67,11 @@ const Playlists = () => {
       const analysis = await getPlaylistMood(playlist.id);
       setMoodData(analysis);
       
-      toast.success('Playlist analyzed successfully!', { id: 'analyze-success' });
+      if (analysis.features_available === false) {
+        toast.error(analysis.message || 'Mood analysis is degraded — mood data unavailable for these tracks', { id: 'analyze-degraded' });
+      } else {
+        toast.success('Playlist analyzed successfully!', { id: 'analyze-success' });
+      }
     } catch (error) {
       console.error('Failed to analyze playlist:', error);
       toast.error(error.response?.data?.message || 'Failed to analyze playlist', { id: 'analyze-error' });
