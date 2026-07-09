@@ -1,185 +1,191 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { getCurrentUser } from '../api/auth';
 import toast from 'react-hot-toast';
+
+// how long (ms) a closed session stays valid before auto-logout
+const CLOSURE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+// localStorage key for the closure timestamp (sessionStorage is wiped on full browser exit)
+const CLOSED_AT_KEY = 'moodiq_closed_at';
+const TOKEN_KEY     = 'auth_token';
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('auth_token'));
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken]               = useState(null);
+  const [user, setUser]                 = useState(null);
+  const [loading, setLoading]           = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // initialize auth state on mount
+  // ref so the beforeunload handler always has the latest auth state
+  const isAuthenticatedRef = useRef(false);
+  isAuthenticatedRef.current = isAuthenticated;
+
+  // guard against React StrictMode double-invoking the mount effect
+  const initCalledRef = useRef(false);
+
+  // ── 1. Closure-timer: write timestamp when the tab/window closes ────────
   useEffect(() => {
-    console.log('🔐 AuthContext: Initializing...');
+    const handleBeforeUnload = () => {
+      if (isAuthenticatedRef.current) {
+        // record when the user closed the page — use localStorage so it
+        // survives a full browser exit and is readable on next open
+        localStorage.setItem(CLOSED_AT_KEY, String(Date.now()));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // ── 2. On mount: check closure timer, then restore session ──────────────
+  useEffect(() => {
+    if (initCalledRef.current) return; // StrictMode guard
+    initCalledRef.current = true;
     initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initAuth = async () => {
-    const storedToken = localStorage.getItem('auth_token');
-    
-    console.log('🔍 AuthContext: Checking for stored token...');
-    console.log('Token exists:', !!storedToken);
-    
-    if (storedToken) {
-      try {
-        // decode and validate JWT
-        console.log('🔓 AuthContext: Decoding JWT token...');
-        const decoded = jwtDecode(storedToken);
-        console.log('JWT decoded:', { id: decoded.id, exp: decoded.exp });
-        
-        // check if token is expired
-        if (decoded.exp * 1000 < Date.now()) {
-          console.log('⚠️ AuthContext: Token expired');
-          handleLogout();
-          setLoading(false);
-          return;
-        }
+    const storedToken = localStorage.getItem(TOKEN_KEY);
 
-        console.log('✅ AuthContext: Token is valid');
-        
-        // token is valid, fetch user profile
-        setToken(storedToken);
-        console.log('📋 AuthContext: Fetching user profile...');
-        
-        await fetchUserProfile();
-        setIsAuthenticated(true);
-        console.log('✅ AuthContext: User authenticated successfully');
-        
-      } catch (error) {
-        console.error('❌ AuthContext: Token validation failed:', error.message);
-        handleLogout();
-      }
-    } else {
-      console.log('ℹ️ AuthContext: No token found, user not authenticated');
+    if (!storedToken) {
+      // no token at all — not logged in
+      setLoading(false);
+      return;
     }
-    
-    setLoading(false);
-  };
 
-  // fetch user profile from API
-  const fetchUserProfile = async () => {
+    // ── check the 10-minute closure window ──────────────────────────────
+    const closedAtStr = localStorage.getItem(CLOSED_AT_KEY);
+    if (closedAtStr) {
+      const closedAt = parseInt(closedAtStr, 10);
+      const elapsed  = Date.now() - closedAt;
+
+      // remove the marker regardless — it's a one-shot check per open
+      localStorage.removeItem(CLOSED_AT_KEY);
+
+      if (elapsed > CLOSURE_TIMEOUT_MS) {
+        // user was away for more than 10 minutes — clear session
+        clearSession();
+        setLoading(false);
+        return;
+      }
+      // within the window — fall through to normal token validation
+    }
+
+    // ── validate the JWT locally (no network needed) ─────────────────────
+    let decoded;
     try {
-      console.log('📞 AuthContext: Calling getCurrentUser API...');
-      const userData = await getCurrentUser();
-      
-      console.log('✅ AuthContext: User data received:', {
-        id: userData._id,
-        name: userData.displayName,
-        email: userData.email,
-      });
-      
-      setUser(userData);
-      return userData;
-    } catch (error) {
-      console.error('❌ AuthContext: Failed to fetch user profile:', error.message);
-      
-      // if API returns 401, token is invalid
-      if (error.response?.status === 401) {
-        console.log('🚪 AuthContext: Unauthorized, logging out...');
-        handleLogout();
-      }
-      
-      throw error;
+      decoded = jwtDecode(storedToken);
+    } catch {
+      // malformed token
+      clearSession();
+      setLoading(false);
+      return;
     }
-  };
 
-  // handle login with JWT token
-  const handleLogin = async (newToken) => {
+    if (decoded.exp * 1000 < Date.now()) {
+      // JWT itself has expired (typically 30-day window from our backend)
+      clearSession();
+      setLoading(false);
+      return;
+    }
+
+    // token is locally valid — optimistically mark as authenticated and stop
+    // blocking the UI immediately (no network round-trip before render)
+    setToken(storedToken);
+    setIsAuthenticated(true);
+    setLoading(false); // ← unblock the router NOW, profile loads in background
+
+    // ── fetch user profile from the server in the background ─────────────
     try {
-      console.log('🔑 AuthContext: Handling login...');
-      console.log('Token received (first 20 chars):', newToken?.substring(0, 20) + '...');
-      
-      // validate token format
-      if (!newToken || typeof newToken !== 'string') {
-        throw new Error('Invalid token format');
-      }
+      await fetchUserProfile();
+    } catch (err) {
+      const status = err.response?.status;
 
-      // decode and validate token
-      console.log('🔓 AuthContext: Decoding JWT...');
-      const decoded = jwtDecode(newToken);
-      console.log('JWT decoded:', { id: decoded.id, exp: decoded.exp });
-      
-      if (decoded.exp * 1000 < Date.now()) {
-        throw new Error('Token expired');
+      if (status === 401 || status === 403 || status === 404) {
+        // server explicitly rejected the token — clear everything
+        clearSession();
       }
-
-      console.log('💾 AuthContext: Storing token in localStorage...');
-      // store token in localStorage
-      localStorage.setItem('auth_token', newToken);
-      setToken(newToken);
-      
-      console.log('📋 AuthContext: Fetching user data...');
-      // fetch user data
-      const userData = await fetchUserProfile();
-      setIsAuthenticated(true);
-      
-      console.log('✅ AuthContext: Login successful');
-      console.log('User logged in:', userData.displayName);
-      
-      // show success message only once
-      toast.success(`Welcome back, ${userData.displayName}!`, { 
-        id: 'login-success',
-        duration: 3000 
-      });
-      
-      return userData;
-    } catch (error) {
-      console.error('❌ AuthContext: Login failed:', error.message);
-      
-      // show error only once
-      toast.error('Login failed. Please try again.', { 
-        id: 'login-error',
-        duration: 4000 
-      });
-      
-      handleLogout();
-      throw error;
+      // for network errors / 5xx (cold-start), keep the user logged in;
+      // the JWT is locally valid and other API calls will work once server wakes
     }
   };
 
-  // handle logout
-  const handleLogout = () => {
-    console.log('🚪 AuthContext: Logging out...');
-    
-    localStorage.removeItem('auth_token');
+  // ── helpers ─────────────────────────────────────────────────────────────
+
+  const clearSession = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(CLOSED_AT_KEY); // clear closure timer too
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    
-    console.log('✅ AuthContext: Logout complete');
-    
-    // redirect to home
+  };
+
+  const fetchUserProfile = async () => {
+    const userData = await getCurrentUser();
+    setUser(userData);
+    return userData;
+  };
+
+  // ── handleLogin ──────────────────────────────────────────────────────────
+  const handleLogin = async (newToken) => {
+    if (!newToken || typeof newToken !== 'string') {
+      throw new Error('Invalid token format');
+    }
+
+    let decoded;
+    try {
+      decoded = jwtDecode(newToken);
+    } catch {
+      throw new Error('Could not decode token');
+    }
+
+    if (decoded.exp * 1000 < Date.now()) {
+      throw new Error('Token already expired');
+    }
+
+    localStorage.setItem(TOKEN_KEY, newToken);
+    // clear any stale closure timer from a previous session
+    localStorage.removeItem(CLOSED_AT_KEY);
+    setToken(newToken);
+
+    try {
+      const userData = await fetchUserProfile();
+      setIsAuthenticated(true);
+
+      toast.success(`Welcome back, ${userData.displayName}!`, {
+        id: 'login-success',
+        duration: 3000,
+      });
+
+      return userData;
+    } catch (err) {
+      clearSession();
+      toast.error('Login failed. Please try again.', { id: 'login-error', duration: 4000 });
+      throw err;
+    }
+  };
+
+  // ── handleLogout ─────────────────────────────────────────────────────────
+  const handleLogout = () => {
+    clearSession();
     window.location.href = '/';
   };
 
-  // update user data (without API call)
-  const updateUser = (updates) => {
-    console.log('🔄 AuthContext: Updating user data:', Object.keys(updates));
-    setUser(prev => ({ ...prev, ...updates }));
-  };
+  // ── updateUser / refreshUser ─────────────────────────────────────────────
+  const updateUser  = (updates) => setUser(prev => ({ ...prev, ...updates }));
 
-  // refresh user data from API
   const refreshUser = async () => {
-    try {
-      console.log('🔄 AuthContext: Refreshing user data...');
-      const userData = await fetchUserProfile();
-      console.log('✅ AuthContext: User data refreshed');
-      return userData;
-    } catch (error) {
-      console.error('❌ AuthContext: Failed to refresh user:', error.message);
-      throw error;
-    }
+    const userData = await fetchUserProfile();
+    return userData;
   };
 
   const value = {

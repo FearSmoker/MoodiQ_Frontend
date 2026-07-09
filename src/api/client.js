@@ -8,6 +8,13 @@ const api = axios.create({
   },
 });
 
+// centralized force-logout — clears all auth state then redirects
+const forceLogout = () => {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('moodiq_closed_at'); // clear closure timer so next login is clean
+  window.location.href = '/';
+};
+
 // request counter for debugging
 let requestCount = 0;
 
@@ -66,46 +73,44 @@ api.interceptors.response.use(
 
     const { status, data } = error.response;
 
-    // handle Spotify token expiry
+    // handle Spotify token expiry — backend auto-refreshes; just retry once
     if (data?.code === 'SPOTIFY_TOKEN_EXPIRED' && !originalRequest._retry) {
-      console.log('🔄 Spotify token expired, attempting refresh...');
+      console.log('🔄 Spotify token expired, retrying request...');
       originalRequest._retry = true;
-
       try {
-        // the backend should handle refresh automatically
-        // just retry the original request
-        console.log('🔄 Retrying original request...');
         return api(originalRequest);
-        
       } catch (refreshError) {
-        console.error('❌ Token refresh failed:', refreshError);
-        localStorage.removeItem('auth_token');
-        window.location.href = '/';
+        console.error('❌ Retry after Spotify token expiry failed:', refreshError);
+        forceLogout();
         return Promise.reject(refreshError);
       }
     }
 
+    // Spotify refresh token itself is dead — must re-authenticate
+    if (data?.code === 'SPOTIFY_TOKEN_REFRESH_FAILED') {
+      console.log('🚪 Spotify refresh token expired — forcing logout');
+      forceLogout();
+      return Promise.reject(error);
+    }
+
     // handle JWT expiry or invalid token
     if (data?.code === 'JWT_EXPIRED' || data?.code === 'INVALID_TOKEN') {
-      console.log('🚪 JWT expired or invalid - redirecting to login');
-      localStorage.removeItem('auth_token');
-      window.location.href = '/';
+      console.log('🚪 JWT expired or invalid — forcing logout');
+      forceLogout();
       return Promise.reject(error);
     }
 
     // handle unauthorized (no token)
     if (status === 401 && data?.code === 'NO_TOKEN') {
-      console.log('🚪 No authentication token - redirecting to login');
-      localStorage.removeItem('auth_token');
-      window.location.href = '/';
+      console.log('🚪 No authentication token — forcing logout');
+      forceLogout();
       return Promise.reject(error);
     }
 
     // handle user not found
     if (data?.code === 'USER_NOT_FOUND') {
-      console.log('🚪 User not found - redirecting to login');
-      localStorage.removeItem('auth_token');
-      window.location.href = '/';
+      console.log('🚪 User not found — forcing logout');
+      forceLogout();
       return Promise.reject(error);
     }
 
