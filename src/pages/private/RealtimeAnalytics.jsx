@@ -39,7 +39,6 @@ const RealtimeAnalytics = () => {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Live flowing graph: array of { time, label, valence, energy, mood } | { time, gap: true }
   const [liveDataPoints, setLiveDataPoints] = useState([]);
   const MAX_LIVE_POINTS = 60; // keep last 60 data points (~10 min at 10s intervals)
 
@@ -54,7 +53,6 @@ const RealtimeAnalytics = () => {
   const livePollingRef = useRef(null);
   const lastSocketUpdateRef = useRef(0); // timestamp of last socket update
 
-  // ─── Shared helper: append one live data point ──────────────────────────────
   const appendLivePoint = (data) => {
     if (!data) return;
     const playing = data?.isPlaying || data?.is_playing || false;
@@ -62,14 +60,14 @@ const RealtimeAnalytics = () => {
     const now = Date.now();
     const timeLabel = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    // Pull audio features from wherever they live in the response
+    // pull audio features from wherever they live in the response
     const af = data.audioFeatures ||
                data.audio_features ||
                data.track?.features ||
                data.features || {};
 
     setLiveDataPoints(prev => {
-      // Detect song change → insert gap marker
+      // detect song change → insert gap marker
       const needsGap = prev.length > 0 &&
         lastTrackIdRef.current !== null &&
         trackId !== null &&
@@ -98,12 +96,12 @@ const RealtimeAnalytics = () => {
     if (trackId) lastTrackIdRef.current = trackId;
   };
 
-  // Synchronize local progress with realtimeData updates (with seek detection)
+  // synchronize local progress with realtimeData updates (with seek detection)
   useEffect(() => {
     if (realtimeData?.track) {
       const newProgress = realtimeData.track.progress || 0;
       const predicted = lastProgressRef.current;
-      // If the reported progress is > 3s different from our predicted position → seek happened → snap
+      
       if (Math.abs(newProgress - predicted) > 3000) {
         setLocalProgress(newProgress);
       }
@@ -116,7 +114,6 @@ const RealtimeAnalytics = () => {
     }
   }, [realtimeData]);
 
-  // Smooth client-side progress ticker (1 second steps)
   useEffect(() => {
     if (!isPlaying) return;
     const progressInterval = setInterval(() => {
@@ -137,7 +134,7 @@ const RealtimeAnalytics = () => {
     isMounted.current = true;
     fetchData();
 
-    // Listen to real-time socket updates via CustomEvent (ws-message)
+    // listen to real-time socket updates via CustomEvent (ws-message)
     const handleWsMessage = (event) => {
       const message = event.detail;
       if (message.type === 'now_playing_update' && isMounted.current) {
@@ -151,24 +148,24 @@ const RealtimeAnalytics = () => {
         setIsPlaying(playing);
         setLastUpdate(new Date());
 
-        // Append to live graph
+        // append to live graph
         appendLivePoint(data);
       }
     };
     window.addEventListener('ws-message', handleWsMessage);
 
-    // Refresh mood timeline every 10 seconds
+    // refresh mood timeline every 10 seconds
     timelinePollingRef.current = setInterval(() => {
       if (isMounted.current) fetchMoodTimeline(selectedDays);
     }, 10000);
 
-    // Refresh activity analytics (Peak Hours / Weekly Pattern) every 10 seconds,
+    // refresh activity analytics (Peak Hours / Weekly Pattern) every 10 seconds,
     // same cadence as the mood timeline, so they no longer need a manual refresh.
     activityPollingRef.current = setInterval(() => {
       if (isMounted.current) fetchActivityData();
     }, 10000);
 
-    // Fallback live-graph polling every 5 seconds
+    // fallback live-graph polling every 5 seconds
     // (fires when socket hasn't updated in the last 4s)
     livePollingRef.current = setInterval(async () => {
       if (!isMounted.current) return;
@@ -240,7 +237,7 @@ const RealtimeAnalytics = () => {
     }
   };
 
-  // Mirrors fetchMoodTimeline — keeps Peak Hours / Weekly Pattern live without
+  // mirrors fetchMoodTimeline — keeps Peak Hours / Weekly Pattern live without
   // requiring a manual page refresh or a full-page Loader flash.
   const fetchActivityData = async () => {
     try {
@@ -259,7 +256,6 @@ const RealtimeAnalytics = () => {
     toast.success("Data refreshed!", { id: "refresh-success" });
   };
 
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -270,7 +266,6 @@ const RealtimeAnalytics = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
           <Activity className="w-8 h-8 text-blue-600" />
@@ -281,7 +276,6 @@ const RealtimeAnalytics = () => {
         </p>
       </div>
 
-      {/* Connection Status */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -313,7 +307,6 @@ const RealtimeAnalytics = () => {
         </div>
       </div>
 
-      {/* Live Flowing Graph */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold flex items-center gap-2">
@@ -388,7 +381,6 @@ const RealtimeAnalytics = () => {
         </div>
       </div>
 
-      {/* Currently Playing */}
       {realtimeData?.isPlaying && realtimeData.track && (
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center gap-2 mb-4">
@@ -413,7 +405,6 @@ const RealtimeAnalytics = () => {
                 {realtimeData.track.artists?.map((a) => a.name).join(", ")}
               </p>
 
-              {/* Mood Analysis */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                 {realtimeData.mood?.primary_mood && (
                   <div className="bg-white/20 backdrop-blur rounded-lg p-3">
@@ -449,7 +440,6 @@ const RealtimeAnalytics = () => {
                 )}
               </div>
 
-              {/* Progress Bar */}
               {localDuration > 0 && (
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-1 font-mono">
@@ -467,7 +457,6 @@ const RealtimeAnalytics = () => {
                 </div>
               )}
 
-              {/* Device Info */}
               {realtimeData.device && (
                 <div className="mt-3 text-sm text-white/70">
                   Playing on {realtimeData.device.name}
@@ -478,7 +467,6 @@ const RealtimeAnalytics = () => {
         </div>
       )}
 
-      {/* Not Playing State */}
       {!realtimeData?.isPlaying && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
           <Music className="w-16 h-16 mx-auto mb-4 text-gray-400" />
@@ -489,7 +477,6 @@ const RealtimeAnalytics = () => {
         </div>
       )}
 
-      {/* Mood Timeline */}
       {moodTimeline &&
         moodTimeline.timeline &&
         moodTimeline.timeline.length > 0 && (
@@ -516,7 +503,6 @@ const RealtimeAnalytics = () => {
               </div>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {moodTimeline.overall_statistics?.most_common_mood && (
                 <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
@@ -556,7 +542,6 @@ const RealtimeAnalytics = () => {
               </div>
             </div>
 
-            {/* Timeline Chart - Use aggregated features */}
             {moodTimeline?.aggregatedFeatures?.timeline?.dates?.length > 0 && (
               <MoodLineChart
                 data={moodTimeline.timeline.map((day, index) => ({
@@ -576,10 +561,8 @@ const RealtimeAnalytics = () => {
           </div>
         )}
 
-      {/* Activity Insights */}
       {activityData && (
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Peak Hours */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
@@ -613,7 +596,6 @@ const RealtimeAnalytics = () => {
             </div>
           </div>
 
-          {/* Weekly Pattern */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Heart className="w-5 h-5 text-pink-600" />
@@ -646,7 +628,6 @@ const RealtimeAnalytics = () => {
         </div>
       )}
 
-      {/* Info Box */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6">
         <div className="flex items-start gap-4">
           <Zap className="w-8 h-8 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
@@ -665,7 +646,7 @@ const RealtimeAnalytics = () => {
   );
 };
 
-// Helper function to format time
+// helper function to format time
 const formatTime = (ms) => {
   if (!ms || ms < 0) return "0:00";
   const minutes = Math.floor(ms / 60000);

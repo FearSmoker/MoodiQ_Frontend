@@ -28,7 +28,7 @@ const useSocket = () => {
     if (unmounted.current) return;
     if (!WS_URL) return;
 
-    // Close any existing socket cleanly
+    // close any existing socket cleanly
     if (socket.current) {
       socket.current.onclose = null; // prevent reconnect loop
       socket.current.close();
@@ -50,7 +50,7 @@ const useSocket = () => {
       setIsConnected(false);
       socket.current = null;
 
-      // Exponential backoff reconnect
+      // exponential backoff reconnect
       reconnectTimeout.current = setTimeout(() => {
         if (!unmounted.current) connect();
       }, backoffMs.current);
@@ -61,7 +61,7 @@ const useSocket = () => {
       try {
         const data = JSON.parse(event.data);
 
-        // Dispatch global custom event for page-level components
+        // dispatch global custom event for page-level components
         window.dispatchEvent(new CustomEvent('ws-message', { detail: data }));
 
         switch (data.type) {
@@ -87,7 +87,7 @@ const useSocket = () => {
             break;
         }
       } catch (parseErr) {
-        // Ignore malformed messages
+        // ignore malformed messages
       }
     };
 
@@ -111,7 +111,7 @@ const useSocket = () => {
     };
   }, []); // connect once on mount
 
-  // Re-subscribe if user changes (e.g. login after mount)
+  // re-subscribe if user changes (e.g. login after mount)
   useEffect(() => {
     if (socket.current && socket.current.readyState === WebSocket.OPEN) {
       subscribe(socket.current);

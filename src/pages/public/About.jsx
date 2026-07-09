@@ -27,7 +27,6 @@ const About = () => {
   return (
     <div className="py-20">
       <div className="container mx-auto px-4">
-        {/* Hero Section */}
         <div className="max-w-4xl mx-auto text-center mb-20">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             About MoodiQ
@@ -55,7 +54,6 @@ const About = () => {
           </div>
         </div>
 
-        {/* Values */}
         <div className="mb-20">
           <h2 className="text-4xl font-bold text-center mb-12">Our Values</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -78,7 +76,6 @@ const About = () => {
           </div>
         </div>
 
-        {/* Technology */}
         <div className="max-w-5xl mx-auto">
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-xl">
             <h2 className="text-3xl font-bold mb-6">The Technology</h2>

@@ -21,7 +21,7 @@ export const ServiceAuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Check linked services when user changes
+  // check linked services when user changes
   useEffect(() => {
     if (user) {
       console.log('🔍 ServiceAuth: Checking linked services for user:', user.displayName);
@@ -29,7 +29,7 @@ export const ServiceAuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Check which services are linked
+  // check which services are linked
   const checkLinkedServices = () => {
     if (!user) {
       console.log('⚠️ ServiceAuth: No user, cannot check services');
@@ -38,7 +38,7 @@ export const ServiceAuthProvider = ({ children }) => {
 
     console.log('📋 ServiceAuth: User auth tokens:', user.authTokens);
     
-    // Check if authTokens exists and has services
+    // check if authTokens exists and has services
     let youtubeLinked = false;
     let appleLinked = false;
 
@@ -64,7 +64,7 @@ export const ServiceAuthProvider = ({ children }) => {
     });
   };
 
-  // Link YouTube Music
+  // link YouTube Music
   const linkYouTube = () => {
     console.log('🔗 ServiceAuth: Initiating YouTube link...');
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -75,17 +75,17 @@ export const ServiceAuthProvider = ({ children }) => {
       return;
     }
 
-    // Store current URL to return after auth
+    // store current URL to return after auth
     sessionStorage.setItem('preAuthUrl', window.location.pathname);
     console.log('💾 ServiceAuth: Stored pre-auth URL:', window.location.pathname);
     
-    // Redirect to YouTube auth endpoint
+    // redirect to YouTube auth endpoint
     const authUrl = `${apiUrl}/auth/youtube/auth`;
     console.log('🔄 ServiceAuth: Redirecting to:', authUrl);
     window.location.href = authUrl;
   };
 
-  // Link Apple Music
+  // link Apple Music
   const linkAppleMusic = async (musicUserToken) => {
     console.log('🔗 ServiceAuth: Linking Apple Music...');
     setLoading(true);
@@ -113,7 +113,7 @@ export const ServiceAuthProvider = ({ children }) => {
     }
   };
 
-  // Unlink service
+  // unlink service
   const unlinkService = async (service) => {
     if (!['youtube', 'apple'].includes(service)) {
       console.error('❌ ServiceAuth: Invalid service:', service);
@@ -147,14 +147,14 @@ export const ServiceAuthProvider = ({ children }) => {
     }
   };
 
-  // Check if service is linked
+  // check if service is linked
   const isServiceLinked = (service) => {
     const linked = linkedServices[service] || false;
     console.log(`🔍 ServiceAuth: Is ${service} linked?`, linked);
     return linked;
   };
 
-  // Get all linked services
+  // get all linked services
   const getLinkedServices = () => {
     const services = Object.entries(linkedServices)
       .filter(([_, isLinked]) => isLinked)

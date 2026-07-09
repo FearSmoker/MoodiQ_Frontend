@@ -1,23 +1,14 @@
 import api from './client';
 
-/**
- * ============================================
- * PLAYLIST OPERATIONS - Matches playlistController.js
- * ============================================
- */
-
-/**
- * Get user's playlists
- */
 export const getPlaylists = async () => {
   console.log('🎵 API: Fetching playlists...');
   const { data } = await api.get('/playlists');
   console.log('✅ API: Playlists received');
   
-  // CRITICAL: Always return array and deduplicate by ID
+  // cRITICAL: Always return array and deduplicate by ID
   const playlists = data.playlists || data || [];
   
-  // Remove duplicates using Map (keeps first occurrence)
+  // remove duplicates using Map (keeps first occurrence)
   const uniquePlaylists = Array.from(
     new Map(playlists.map(p => [p.id, p])).values()
   );
@@ -26,10 +17,7 @@ export const getPlaylists = async () => {
   
   return uniquePlaylists;
 };
-/**
- * Get specific playlist details
- * @param {string} playlistId - Spotify playlist ID
- */
+
 export const getPlaylist = async (playlistId) => {
   console.log(`🎵 API: Fetching playlist ${playlistId}...`);
   const { data } = await api.get(`/playlists/${playlistId}`);
@@ -37,16 +25,6 @@ export const getPlaylist = async (playlistId) => {
   return data;
 };
 
-/**
- * ============================================
- * ML-POWERED MOOD FEATURES (HYBRID)
- * ============================================
- */
-
-/**
- * Analyze playlist mood using HYBRID ML approach
- * @param {string} playlistId - Spotify playlist ID
- */
 export const getPlaylistMood = async (playlistId) => {
   console.log(`🎭 API: Analyzing playlist ${playlistId}...`);
   const { data } = await api.post('/playlists/mood', { playlistId });
@@ -54,9 +32,6 @@ export const getPlaylistMood = async (playlistId) => {
   return data;
 };
 
-/**
- * Analyze currently playing track (HYBRID ML)
- */
 export const getCurrentlyPlayingMood = async () => {
   console.log('🎧 API: Analyzing currently playing track...');
   const { data } = await api.get('/playlists/currently-playing');
@@ -64,13 +39,6 @@ export const getCurrentlyPlayingMood = async () => {
   return data;
 };
 
-/**
- * Optimize playlist flow for smooth transitions (ML)
- * @param {Array} tracks - Array of track objects
- * @param {string} startMood - Starting mood (optional)
- * @param {string} endMood - Ending mood (optional)
- * @param {string} algorithm - Optimization algorithm (default: 'dynamic_programming')
- */
 export const optimizePlaylistFlow = async (tracks, startMood = null, endMood = null, algorithm = 'dynamic_programming') => {
   console.log(`⚡ API: Optimizing playlist flow (${tracks.length} tracks)...`);
   const { data } = await api.post('/playlists/optimize', {
@@ -83,11 +51,6 @@ export const optimizePlaylistFlow = async (tracks, startMood = null, endMood = n
   return data;
 };
 
-/**
- * Detect mood gaps in playlist (ML)
- * @param {Array} tracks - Array of track objects
- * @param {number} threshold - Gap detection threshold (default: 1.5)
- */
 export const detectMoodGaps = async (tracks, threshold = 1.5) => {
   console.log(`🔍 API: Detecting mood gaps (${tracks.length} tracks)...`);
   const { data } = await api.post('/playlists/gaps', {
@@ -98,10 +61,6 @@ export const detectMoodGaps = async (tracks, threshold = 1.5) => {
   return data;
 };
 
-/**
- * Fill mood gaps with recommendations (ML)
- * @param {Array} tracks - Array of track objects
- */
 export const fillMoodGaps = async (tracks) => {
   console.log(`🎵 API: Filling mood gaps (${tracks.length} tracks)...`);
   const { data } = await api.post('/playlists/fill-gaps', { tracks });
@@ -109,12 +68,6 @@ export const fillMoodGaps = async (tracks) => {
   return data;
 };
 
-/**
- * Fill mood gaps with TARGETED Spotify catalog bridge tracks (per-gap)
- * Returns gapFills array: each entry has position + up to 2 bridge tracks
- * @param {Array} tracks - Array of track objects
- * @param {number} threshold - Gap detection threshold (default: 0.3)
- */
 export const fillGapsWithSpotify = async (tracks, threshold = 0.3) => {
   console.log(`🎸 API: Smart gap fill with Spotify catalog (${tracks.length} tracks)...`);
   const { data } = await api.post('/playlists/fill-gaps-smart', { tracks, threshold });
@@ -122,13 +75,6 @@ export const fillGapsWithSpotify = async (tracks, threshold = 0.3) => {
   return data;
 };
 
-/**
- * Optimize playlist flow: picks existing tracks fitting the startMood→endMood arc,
- * then fills gaps with Spotify catalog tracks. If <30% fit, generates a fresh playlist.
- * @param {Array} tracks - Current track list (with .features)
- * @param {string} startMood - e.g. 'Joyful'
- * @param {string} endMood   - e.g. 'Romantic'
- */
 export const optimizeAndEnrichFlow = async (tracks, startMood, endMood) => {
   console.log(`🤖 API: Optimize+Enrich (${tracks.length} tracks, ${startMood}→${endMood})...`);
   const { data } = await api.post('/playlists/optimize-enrich', { tracks, startMood, endMood });
@@ -136,18 +82,6 @@ export const optimizeAndEnrichFlow = async (tracks, startMood, endMood) => {
   return data;
 };
 
-/**
- * ============================================
- * PLAYLIST GENERATION (HYBRID ML)
- * ============================================
- */
-
-/**
- * Generate mood-based playlist (HYBRID)
- * @param {string} targetMood - Target mood
- * @param {string} seedTrackId - Seed track ID (optional)
- * @param {number} limit - Number of tracks (default: 20)
- */
 export const generateMoodPlaylist = async (targetMood, seedTrackId = null, limit = 20) => {
   console.log(`🎨 API: Generating ${targetMood} playlist...`);
   const { data } = await api.post('/playlists/generate/mood', {
@@ -159,12 +93,6 @@ export const generateMoodPlaylist = async (targetMood, seedTrackId = null, limit
   return data;
 };
 
-/**
- * Generate activity-based playlist (HYBRID)
- * @param {string} activity - Target activity
- * @param {string} seedTrackId - Seed track ID (optional)
- * @param {number} limit - Number of tracks (default: 20)
- */
 export const generateActivityPlaylist = async (activity, seedTrackId = null, limit = 20) => {
   console.log(`🏃 API: Generating ${activity} playlist...`);
   const { data } = await api.post('/playlists/generate/activity', {
@@ -176,12 +104,6 @@ export const generateActivityPlaylist = async (activity, seedTrackId = null, lim
   return data;
 };
 
-/**
- * Generate from user's top tracks (SPOTIFY INTEGRATION)
- * @param {string} targetMood - Target mood (optional)
- * @param {number} limit - Number of tracks (default: 20)
- * @param {string} timeRange - Time range (default: 'medium_term')
- */
 export const generateFromTopTracks = async (targetMood = null, limit = 20, timeRange = 'medium_term') => {
   console.log(`🎯 API: Generating from top tracks...`);
   const { data } = await api.post('/playlists/generate/from-top-tracks', {
@@ -193,11 +115,6 @@ export const generateFromTopTracks = async (targetMood = null, limit = 20, timeR
   return data;
 };
 
-/**
- * Generate from recently played (SPOTIFY INTEGRATION)
- * @param {string} targetMood - Target mood (optional)
- * @param {number} limit - Number of tracks (default: 20)
- */
 export const generateFromRecentlyPlayed = async (targetMood = null, limit = 20) => {
   console.log(`⏮️ API: Generating from recently played...`);
   const { data } = await api.post('/playlists/generate/from-recently-played', {
@@ -208,16 +125,6 @@ export const generateFromRecentlyPlayed = async (targetMood = null, limit = 20) 
   return data;
 };
 
-/**
- * ============================================
- * RECOMMENDATIONS (HYBRID ML)
- * ============================================
- */
-
-/**
- * Get personalized recommendations (HYBRID)
- * @param {number} limit - Number of recommendations (default: 20)
- */
 export const getRecommendations = async (limit = 20) => {
   console.log(`💡 API: Fetching recommendations (limit: ${limit})...`);
   const { data } = await api.post('/playlists/recommendations', { limit });
@@ -225,19 +132,6 @@ export const getRecommendations = async (limit = 20) => {
   return data;
 };
 
-/**
- * ============================================
- * PLAYLIST MANAGEMENT
- * ============================================
- */
-
-/**
- * Create new playlist on Spotify
- * @param {string} name - Playlist name
- * @param {Array} trackUris - Track URIs
- * @param {string} description - Playlist description (optional)
- * @param {boolean} isPublic - Public/private (default: true)
- */
 export const createPlaylist = async (name, trackUris, description = '', isPublic = true) => {
   console.log(`➕ API: Creating playlist "${name}"...`);
   const { data } = await api.post('/playlists/create', {
@@ -250,11 +144,6 @@ export const createPlaylist = async (name, trackUris, description = '', isPublic
   return data;
 };
 
-/**
- * Reorder playlist tracks
- * @param {string} playlistId - Playlist ID
- * @param {Array} trackUris - Reordered track URIs
- */
 export const reorderPlaylist = async (playlistId, trackUris) => {
   console.log(`🔄 API: Reordering playlist ${playlistId}...`);
   const { data } = await api.put(`/playlists/${playlistId}/reorder`, { trackUris });
@@ -262,15 +151,6 @@ export const reorderPlaylist = async (playlistId, trackUris) => {
   return data;
 };
 
-/**
- * ============================================
- * HELPER FUNCTIONS
- * ============================================
- */
-
-/**
- * Format tracks for API
- */
 export const formatTracksForAPI = (tracks) => {
   return tracks.map(track => ({
     id: track.id,
@@ -282,9 +162,6 @@ export const formatTracksForAPI = (tracks) => {
   }));
 };
 
-/**
- * Get track URIs from tracks
- */
 export const getTrackURIs = (tracks) => {
   return tracks.map(track => {
     if (track.uri) return track.uri;

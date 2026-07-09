@@ -35,13 +35,13 @@ const AuthCallback = () => {
       setStatus('processing');
       console.log('📞 AuthCallback: Calling login function...');
 
-      // Call login from AuthContext
+      // call login from AuthContext
       await login(token);
 
       console.log('✅ AuthCallback: Login successful');
       setStatus('success');
 
-      // Wait a moment then redirect to dashboard
+      // wait a moment then redirect to dashboard
       console.log('🔄 AuthCallback: Redirecting to dashboard in 1 second...');
       setTimeout(() => {
         navigate('/dashboard', { replace: true });
@@ -58,7 +58,7 @@ const AuthCallback = () => {
       setStatus('error');
       setError(error.message || 'Authentication failed. Please try again.');
       
-      // Redirect to home after showing error
+      // redirect to home after showing error
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 3000);
@@ -69,7 +69,6 @@ const AuthCallback = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-12 max-w-md w-full mx-4">
         
-        {/* Processing State */}
         {status === 'processing' && (
           <div className="text-center">
             <div className="mb-6 flex justify-center">
@@ -87,7 +86,6 @@ const AuthCallback = () => {
           </div>
         )}
 
-        {/* Success State */}
         {status === 'success' && (
           <div className="text-center">
             <div className="mb-6 flex justify-center">
@@ -104,7 +102,6 @@ const AuthCallback = () => {
           </div>
         )}
 
-        {/* Error State */}
         {status === 'error' && (
           <div className="text-center">
             <div className="mb-6 flex justify-center">
@@ -127,7 +124,6 @@ const AuthCallback = () => {
           </div>
         )}
 
-        {/* Progress Bar */}
         <div className="mt-8">
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
             <div 

@@ -5,11 +5,9 @@ import ThemeToggle from '../ui/ThemeToggle';
 const PublicLayout = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Navbar */}
       <nav className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <Music className="w-6 h-6 text-white" />
@@ -19,7 +17,6 @@ const PublicLayout = () => {
               </span>
             </Link>
 
-            {/* Navigation Links */}
             <div className="hidden md:flex items-center gap-6">
               <Link 
                 to="/features" 
@@ -39,16 +36,13 @@ const PublicLayout = () => {
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="flex-grow">
         <Outlet />
       </main>
 
-      {/* Footer */}
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* About Section */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Music className="w-6 h-6 text-indigo-600" />
@@ -59,7 +53,6 @@ const PublicLayout = () => {
               </p>
             </div>
 
-            {/* Quick Links */}
             <div>
               <h3 className="font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
@@ -81,7 +74,6 @@ const PublicLayout = () => {
               </ul>
             </div>
 
-            {/* Social Links */}
             <div>
               <h3 className="font-semibold mb-4">Connect</h3>
               <div className="flex gap-4">
@@ -105,7 +97,6 @@ const PublicLayout = () => {
             </div>
           </div>
 
-          {/* Copyright */}
           <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400">
             <p className="flex items-center justify-center gap-1">
               Made with <Heart className="w-4 h-4 text-red-500" /> by MoodiQ Team

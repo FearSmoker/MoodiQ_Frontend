@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 const MoodCloud = ({ moodData }) => {
-  // Process moodData to count mood occurrences
+  // process moodData to count mood occurrences
   const moodCounts = (moodData || []).reduce((acc, track) => {
     const mood = track.mood || track.moodScore || 'Unknown';
     acc[mood] = (acc[mood] || 0) + 1;
@@ -9,8 +9,8 @@ const MoodCloud = ({ moodData }) => {
   }, {});
 
   const moods = Object.entries(moodCounts)
-    .sort((a, b) => b[1] - a[1]) // Sort by count descending
-    .slice(0, 15); // Limit to top 15 moods
+    .sort((a, b) => b[1] - a[1]) // sort by count descending
+    .slice(0, 15); // limit to top 15 moods
 
   if (!moods.length) {
     return (
@@ -45,7 +45,7 @@ const MoodCloud = ({ moodData }) => {
 
   const getFontSize = (count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    return 0.875 + normalized * 1.5; // Between 0.875rem and 2.375rem
+    return 0.875 + normalized * 1.5; 
   };
 
   return (

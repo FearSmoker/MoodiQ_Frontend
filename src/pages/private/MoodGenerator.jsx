@@ -134,7 +134,6 @@ const MoodGenerator = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
           <Wand2 className="w-8 h-8 text-purple-600" />
@@ -145,7 +144,6 @@ const MoodGenerator = () => {
         </p>
       </div>
 
-      {/* Tab Navigation */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2">
         <div className="flex gap-2">
           <button
@@ -181,7 +179,6 @@ const MoodGenerator = () => {
         </div>
       </div>
 
-      {/* Mood Selection */}
       {activeTab === 'mood' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -206,7 +203,6 @@ const MoodGenerator = () => {
         </div>
       )}
 
-      {/* Activity Selection */}
       {activeTab === 'activity' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -231,7 +227,6 @@ const MoodGenerator = () => {
         </div>
       )}
 
-      {/* Smart Mix */}
       {activeTab === 'smart' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
           <h2 className="text-2xl font-bold mb-4">Smart Mix Generator</h2>
@@ -313,7 +308,6 @@ const MoodGenerator = () => {
         </div>
       )}
 
-      {/* Generation Progress */}
       {generating && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
           <Loader2 className="animate-spin w-16 h-16 mx-auto mb-4 text-indigo-600" />
@@ -326,7 +320,6 @@ const MoodGenerator = () => {
         </div>
       )}
 
-      {/* Generated Playlist */}
       {generatedTracks && !generating && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -355,7 +348,6 @@ const MoodGenerator = () => {
             </div>
           </div>
 
-          {/* Track List */}
           <div className="space-y-2 max-h-[500px] overflow-y-auto">
             {generatedTracks.tracks?.map((track, index) => (
               <div
@@ -397,7 +389,6 @@ const MoodGenerator = () => {
         </div>
       )}
 
-      {/* Info Box */}
       {!generatedTracks && !generating && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-8 text-center">
           <Music className="w-16 h-16 mx-auto mb-4 text-indigo-600 dark:text-indigo-400" />

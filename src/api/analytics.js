@@ -1,16 +1,5 @@
 import api from './client';
 
-/**
- * ============================================
- * ANALYTICS API - Complete Integration v3.0
- * ============================================
- */
-
-/**
- * Get mood trends from recent listening (12-mood system)
- * @param {number} limit - Number of tracks to analyze
- * @param {number} days - Number of days to analyze
- */
 export const getMoodTrends = async (limit = 50, days = 7) => {
   const { data } = await api.get('/analytics/mood-trends', {
     params: { limit, days }
@@ -18,34 +7,21 @@ export const getMoodTrends = async (limit = 50, days = 7) => {
   return data;
 };
 
-/**
- * Get mood distribution (12-mood system)
- */
 export const getMoodDistribution = async () => {
   const { data } = await api.get('/analytics/mood-distribution');
   return data;
 };
 
-/**
- * Get mood patterns (co-occurrence analysis)
- */
 export const getMoodPatterns = async () => {
   const { data } = await api.get('/analytics/mood-patterns');
   return data;
 };
 
-/**
- * Get listening activity analytics
- */
 export const getActivityAnalytics = async () => {
   const { data } = await api.get('/analytics/activity');
   return data;
 };
 
-/**
- * Get genre analysis
- * @param {string} timeRange - 'short_term', 'medium_term', or 'long_term'
- */
 export const getGenreAnalysis = async (timeRange = 'medium_term') => {
   const { data } = await api.get('/analytics/genres', {
     params: { timeRange }
@@ -53,10 +29,6 @@ export const getGenreAnalysis = async (timeRange = 'medium_term') => {
   return data;
 };
 
-/**
- * Get user mood timeline (PRIMARY ENDPOINT FOR GRAPHS)
- * @param {number} days - Number of days (default: 7)
- */
 export const getMoodTimeline = async (days = 7) => {
   const { data } = await api.get('/analytics/mood-timeline', {
     params: { days }
@@ -64,17 +36,11 @@ export const getMoodTimeline = async (days = 7) => {
   return data;
 };
 
-/**
- * Get real-time current track analysis (ENHANCED)
- */
 export const getRealtimeAnalysis = async () => {
   const { data } = await api.get('/analytics/realtime');
   return data;
 };
 
-/**
- * Get global mood trends
- */
 export const getGlobalMoodTrends = async (limit = 100) => {
   const { data } = await api.get('/analytics/global-trends', {
     params: { limit }
@@ -82,32 +48,16 @@ export const getGlobalMoodTrends = async (limit = 100) => {
   return data;
 };
 
-/**
- * Get live session analytics
- * @param {string} userId - User ID
- */
 export const getLiveSessionAnalytics = async (userId) => {
   const { data } = await api.get(`/analytics/live-session/${userId}`);
   return data;
 };
 
-/**
- * ============================================
- * DASHBOARD API
- * ============================================
- */
-
-/**
- * Get complete dashboard overview (ML-enhanced)
- */
 export const getDashboardOverview = async () => {
   const { data } = await api.get('/dashboard/overview');
   return data;
 };
 
-/**
- * Get detailed listening statistics
- */
 export const getListeningStats = async (timeRange = 'medium_term') => {
   const { data } = await api.get('/dashboard/listening-stats', {
     params: { timeRange }
@@ -115,17 +65,11 @@ export const getListeningStats = async (timeRange = 'medium_term') => {
   return data;
 };
 
-/**
- * Get currently playing track with ML mood analysis
- */
 export const getNowPlaying = async () => {
   const { data } = await api.get('/dashboard/now-playing');
   return data;
 };
 
-/**
- * Get personalized recommendations (ML-powered)
- */
 export const getDashboardRecommendations = async (limit = 20) => {
   const { data } = await api.get('/dashboard/recommendations', {
     params: { limit }
@@ -133,23 +77,11 @@ export const getDashboardRecommendations = async (limit = 20) => {
   return data;
 };
 
-/**
- * ============================================
- * LIVE LISTENING API (NEW)
- * ============================================
- */
-
-/**
- * Start a new live listening session
- */
 export const startLiveSession = async () => {
   const { data } = await api.post('/live/session/start');
   return data;
 };
 
-/**
- * Add track to live session
- */
 export const addTrackToLiveSession = async (sessionId, trackId, trackName, artistName) => {
   const { data } = await api.post('/live/session/add-track', {
     sessionId,
@@ -160,39 +92,21 @@ export const addTrackToLiveSession = async (sessionId, trackId, trackName, artis
   return data;
 };
 
-/**
- * Get current live session
- */
 export const getCurrentLiveSession = async () => {
   const { data } = await api.get('/live/session/current');
   return data;
 };
 
-/**
- * End live session
- */
 export const endLiveSession = async (sessionId) => {
   const { data } = await api.post('/live/session/end', { sessionId });
   return data;
 };
 
-/**
- * Auto-check session for inactivity
- */
 export const autoCheckLiveSession = async () => {
   const { data } = await api.post('/live/session/auto-check');
   return data;
 };
 
-/**
- * ============================================
- * HELPER FUNCTIONS
- * ============================================
- */
-
-/**
- * Get mood color for visualization (12-mood system)
- */
 export const getMoodColor = (mood) => {
   const moodLower = mood?.toLowerCase() || '';
   
@@ -220,9 +134,6 @@ export const getMoodColor = (mood) => {
   return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
 };
 
-/**
- * Format duration from milliseconds to MM:SS
- */
 export const formatDuration = (ms) => {
   if (!ms || ms < 0) return '0:00';
   const minutes = Math.floor(ms / 60000);
@@ -230,17 +141,11 @@ export const formatDuration = (ms) => {
   return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 };
 
-/**
- * Calculate percentage
- */
 export const calculatePercentage = (value, total) => {
   if (!total || total === 0) return 0;
   return Math.round((value / total) * 100);
 };
 
-/**
- * Get 12-mood label with emoji
- */
 export const getMoodLabel = (mood) => {
   const moodLabels = {
     'Joyful': '😄 Joyful',

@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { cva } from 'class-variance-authority';
 
-// Define button variants using cva
+// define button variants using cva
 const buttonVariants = cva(
   'inline-flex items-center justify-center rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2',
   {

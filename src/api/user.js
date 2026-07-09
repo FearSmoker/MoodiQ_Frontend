@@ -1,14 +1,5 @@
 import api from './client';
 
-/**
- * ============================================
- * USER PREFERENCES - Matches userController.js
- * ============================================
- */
-
-/**
- * Get user preferences
- */
 export const getPreferences = async () => {
   console.log('⚙️ API: Fetching preferences...');
   const { data } = await api.get('/user/preferences');
@@ -16,10 +7,6 @@ export const getPreferences = async () => {
   return data;
 };
 
-/**
- * Update user preferences
- * @param {Object} preferences - Preferences object
- */
 export const updatePreferences = async (preferences) => {
   console.log('⚙️ API: Updating preferences...');
   const { data } = await api.put('/user/preferences', preferences);
@@ -27,18 +14,6 @@ export const updatePreferences = async (preferences) => {
   return data;
 };
 
-/**
- * ============================================
- * ML FEEDBACK & LEARNING
- * ============================================
- */
-
-/**
- * Submit mood feedback for ML learning
- * @param {string} trackId - Track ID
- * @param {string} correctMood - Correct mood
- * @param {string} playlistId - Playlist ID (optional)
- */
 export const submitFeedback = async (trackId, correctMood, playlistId = null) => {
   console.log(`💬 API: Submitting feedback for ${trackId}...`);
   const { data } = await api.post('/user/feedback', {
@@ -50,10 +25,6 @@ export const submitFeedback = async (trackId, correctMood, playlistId = null) =>
   return data;
 };
 
-/**
- * Submit batch feedback
- * @param {Array} feedbacks - Array of feedback objects
- */
 export const submitBatchFeedback = async (feedbacks) => {
   console.log(`💬 API: Submitting batch feedback (${feedbacks.length} items)...`);
   const { data } = await api.post('/user/feedback/batch', { feedbacks });
@@ -61,12 +32,6 @@ export const submitBatchFeedback = async (feedbacks) => {
   return data;
 };
 
-/**
- * Log user behavior for implicit learning
- * @param {string} trackId - Track ID
- * @param {string} action - Action type (play, skip, like, etc.)
- * @param {string} timeOfDay - Time of day (optional)
- */
 export const logUserBehavior = async (trackId, action, timeOfDay = null) => {
   console.log(`📊 API: Logging behavior: ${action} for ${trackId}...`);
   const { data } = await api.post('/user/behavior', {
@@ -78,16 +43,6 @@ export const logUserBehavior = async (trackId, action, timeOfDay = null) => {
   return data;
 };
 
-/**
- * ============================================
- * PERSONALIZATION & MODEL TRAINING
- * ============================================
- */
-
-/**
- * Get user's mood timeline (ML)
- * @param {number} days - Number of days (default: 7)
- */
 export const getUserMoodTimeline = async (days = 7) => {
   console.log(`📈 API: Fetching mood timeline (${days} days)...`);
   const { data } = await api.get('/user/mood-timeline', {
@@ -97,9 +52,6 @@ export const getUserMoodTimeline = async (days = 7) => {
   return data;
 };
 
-/**
- * Get user's personalized model info
- */
 export const getUserPersonalizedModel = async () => {
   console.log('🧠 API: Fetching personalized model...');
   const { data } = await api.get('/user/personalized-model');
@@ -107,10 +59,6 @@ export const getUserPersonalizedModel = async () => {
   return data;
 };
 
-/**
- * Trigger model retraining
- * @param {boolean} force - Force retrain even if not enough data (default: false)
- */
 export const triggerModelRetrain = async (force = false) => {
   console.log('🔄 API: Triggering model retraining...');
   const { data } = await api.post('/user/retrain-model', { force });
@@ -118,9 +66,6 @@ export const triggerModelRetrain = async (force = false) => {
   return data;
 };
 
-/**
- * Reset user personalization
- */
 export const resetUserPersonalization = async () => {
   console.log('🗑️ API: Resetting personalization...');
   const { data } = await api.delete('/user/reset-personalization');
@@ -128,17 +73,6 @@ export const resetUserPersonalization = async () => {
   return data;
 };
 
-/**
- * ============================================
- * VOICE/NLP COMMANDS
- * ============================================
- */
-
-/**
- * Process NLP voice command
- * @param {string} command - Voice command text
- * @param {Object} context - Context object (optional)
- */
 export const handleVoiceCommand = async (command, context = {}) => {
   console.log(`🗣️ API: Processing voice command: "${command}"...`);
   const { data } = await api.post('/user/voice-command', {
@@ -149,15 +83,6 @@ export const handleVoiceCommand = async (command, context = {}) => {
   return data;
 };
 
-/**
- * ============================================
- * USER STATISTICS
- * ============================================
- */
-
-/**
- * Get user statistics
- */
 export const getUserStats = async () => {
   console.log('📊 API: Fetching user stats...');
   const { data } = await api.get('/user/stats');
@@ -165,19 +90,6 @@ export const getUserStats = async () => {
   return data;
 };
 
-/**
- * ============================================
- * PLAYLIST SHARING
- * ============================================
- */
-
-/**
- * Share a playlist
- * @param {string} playlistId - Playlist ID
- * @param {Object} moodData - Mood analysis data
- * @param {string} playlistName - Playlist name
- * @param {string} playlistImage - Playlist image URL (optional)
- */
 export const sharePlaylist = async (playlistId, moodData, playlistName, playlistImage = null) => {
   console.log(`🔗 API: Sharing playlist ${playlistId}...`);
   const { data } = await api.post('/user/share', {
@@ -190,10 +102,6 @@ export const sharePlaylist = async (playlistId, moodData, playlistName, playlist
   return data;
 };
 
-/**
- * Get shared playlist data
- * @param {string} shareId - Share ID
- */
 export const getSharedPlaylist = async (shareId) => {
   console.log(`🔗 API: Fetching shared playlist ${shareId}...`);
   const { data } = await api.get(`/user/share/${shareId}`);
@@ -201,9 +109,6 @@ export const getSharedPlaylist = async (shareId) => {
   return data;
 };
 
-/**
- * Get user's shared playlists
- */
 export const getUserShares = async () => {
   console.log('🔗 API: Fetching user shares...');
   const { data } = await api.get('/user/shares');
@@ -211,10 +116,6 @@ export const getUserShares = async () => {
   return data;
 };
 
-/**
- * Delete a shared playlist
- * @param {string} shareId - Share ID
- */
 export const deleteShare = async (shareId) => {
   console.log(`🗑️ API: Deleting share ${shareId}...`);
   const { data } = await api.delete(`/user/share/${shareId}`);

@@ -10,10 +10,10 @@ const MoodLineChart = ({ data, showAggregated = false }) => {
     );
   }
 
-  // Format data for the chart
+  // format data for the chart
   const chartData = data.map((item, index) => {
     if (showAggregated) {
-      // Support both flat aggregated objects and nested aggregatedFeatures objects
+      // support both flat aggregated objects and nested aggregatedFeatures objects
       return {
         date: item.date || `Day ${index + 1}`,
         valence: item.valence ?? item.aggregatedFeatures?.valence ?? 0.5,
@@ -23,7 +23,7 @@ const MoodLineChart = ({ data, showAggregated = false }) => {
       };
     }
     
-    // Fallback to individual track data
+    // fallback to individual track data
     return {
       name: item.name || `${index + 1}`,
       trackName: item.name || item.track || 'Unknown',

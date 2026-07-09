@@ -1,9 +1,5 @@
 import api from './client';
 
-/**
- * Get current user details
- * Returns complete user object with preferences and linked services
- */
 export const getCurrentUser = async () => {
   try {
     console.log('📋 API: Fetching current user...');
@@ -16,10 +12,6 @@ export const getCurrentUser = async () => {
   }
 };
 
-/**
- * Refresh Spotify access token
- * Used when Spotify token expires
- */
 export const refreshAccessToken = async (refreshToken) => {
   try {
     console.log('🔄 API: Refreshing access token...');

@@ -53,7 +53,6 @@ const Share = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
-      {/* Header */}
       <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-8 text-white">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -89,7 +88,6 @@ const Share = () => {
           )}
         </div>
 
-        {/* Stats */}
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
             <Music size={16} />
@@ -110,7 +108,6 @@ const Share = () => {
         </div>
       </div>
 
-      {/* Mood Visualization */}
       {tracks.length > 0 && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold mb-4">Mood Journey</h2>
@@ -118,7 +115,6 @@ const Share = () => {
         </div>
       )}
 
-      {/* Mood Distribution */}
       {Object.keys(moodDistribution).length > 0 && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold mb-4">Mood Distribution</h2>
@@ -142,7 +138,6 @@ const Share = () => {
         </div>
       )}
 
-      {/* Track List */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
         <h2 className="text-2xl font-semibold mb-4">Tracklist</h2>
         <div className="space-y-2">
@@ -181,7 +176,6 @@ const Share = () => {
         </div>
       </div>
 
-      {/* Create Your Own CTA */}
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-8 text-white text-center">
         <h3 className="text-2xl font-bold mb-2">Create Your Own Mood Mix</h3>
         <p className="mb-4 opacity-90">
@@ -198,7 +192,7 @@ const Share = () => {
   );
 };
 
-// Helper function to get mood-based colors
+// helper function to get mood-based colors
 const getMoodColor = (mood) => {
   const moodLower = mood?.toLowerCase() || '';
   

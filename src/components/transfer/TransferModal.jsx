@@ -103,7 +103,6 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold">Transfer Playlist</h2>
           <button
@@ -115,7 +114,6 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Playlist Info */}
           <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
             <div className="text-sm text-gray-500 dark:text-gray-400">Transferring</div>
             <div className="font-semibold">{playlistName}</div>
@@ -126,13 +124,11 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
 
           {!transferStatus ? (
             <>
-              {/* Service Selection */}
               <div>
                 <label className="block text-sm font-medium mb-3">
                   Select Destination Service
                 </label>
                 <div className="space-y-2">
-                  {/* YouTube Music */}
                   <button
                     onClick={() => setService('youtube')}
                     className={`w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
@@ -169,7 +165,6 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
                     )}
                   </button>
 
-                  {/* Apple Music */}
                   <button
                     onClick={() => setService('apple')}
                     className={`w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
@@ -208,7 +203,6 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
                 </div>
               </div>
 
-              {/* Info Box */}
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div className="text-sm text-blue-800 dark:text-blue-200">
                   💡 Transfer will match tracks by name and artist. Some tracks may not be found on the destination service.
@@ -216,12 +210,11 @@ const TransferModal = ({ playlistTracks, playlistName, onClose }) => {
               </div>
             </>
           ) : (
-            /* Transfer Status */
+            
             <TransferStatusDisplay status={transferStatus} />
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
           <Button variant="secondary" onClick={onClose}>
             {transferStatus?.url ? 'Close' : 'Cancel'}
@@ -251,7 +244,6 @@ const TransferStatusDisplay = ({ status }) => {
           {message}
         </div>
         
-        {/* Progress Bar */}
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
@@ -261,7 +253,6 @@ const TransferStatusDisplay = ({ status }) => {
           />
         </div>
 
-        {/* Stats */}
         {(successCount !== undefined || failedCount !== undefined) && (
           <div className="flex gap-4 mt-3 text-sm">
             {successCount !== undefined && (
@@ -278,7 +269,6 @@ const TransferStatusDisplay = ({ status }) => {
         )}
       </div>
 
-      {/* Failed Tracks */}
       {failedTracks && failedTracks.length > 0 && (
         <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
           <div className="font-semibold text-sm mb-2">Tracks not found:</div>
@@ -297,7 +287,6 @@ const TransferStatusDisplay = ({ status }) => {
         </div>
       )}
 
-      {/* Success Link */}
       {url && (
         <a
           href={url}

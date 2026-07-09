@@ -33,7 +33,7 @@ const Settings = () => {
   const { user, refreshUser } = useAuth();
   const { linkedServices, linkYouTube, unlinkService, isServiceLinked, loading: serviceLoading } = useServiceAuth();
   
-  // Initialize to null — never save until API data is loaded
+  // initialize to null — never save until API data is loaded
   const [preferences, setPreferences] = useState(null);
 
   const [loading, setLoading] = useState(false);
@@ -55,7 +55,7 @@ const Settings = () => {
       setLoading(true);
       console.log('⚙️ Fetching user preferences...');
       const data = await getPreferences();
-      // Merge API data with sensible defaults — only after real API load
+      // merge API data with sensible defaults — only after real API load
       setPreferences({
         moodSensitivity: 0.5,
         autoOptimizeFlow: false,
@@ -67,12 +67,11 @@ const Settings = () => {
     } catch (error) {
       console.error('Failed to fetch preferences:', error);
       toast.error('Failed to load preferences', { id: 'pref-error' });
-      // Leave as null so the form stays disabled
+      // leave as null so the form stays disabled
     } finally {
       setLoading(false);
     }
   };
-
 
   const fetchUserStats = async () => {
     try {
@@ -100,7 +99,7 @@ const Settings = () => {
   };
 
   const handleSavePreferences = async () => {
-    // Guard: don't allow saving if preferences haven't loaded from API
+    // guard: don't allow saving if preferences haven't loaded from API
     if (!preferences) {
       toast.error('Preferences not loaded yet. Please wait.', { id: 'pref-not-loaded' });
       return;
@@ -131,7 +130,7 @@ const Settings = () => {
       
       toast.success(result.message || 'Model retraining started!', { id: 'retrain-success' });
       
-      // Refresh ML model info after a delay
+      // refresh ML model info after a delay
       setTimeout(() => {
         fetchMLModel();
       }, 2000);
@@ -155,7 +154,7 @@ const Settings = () => {
       
       toast.success('Personalization reset successfully!', { id: 'reset-success' });
       
-      // Refresh data
+      // refresh data
       fetchUserStats();
       fetchMLModel();
     } catch (error) {
@@ -188,7 +187,6 @@ const Settings = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Settings</h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -196,7 +194,6 @@ const Settings = () => {
         </p>
       </div>
 
-      {/* Profile Section */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
@@ -225,7 +222,6 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Connected Services */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <Music className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
@@ -233,7 +229,6 @@ const Settings = () => {
         </div>
 
         <div className="space-y-4">
-          {/* Spotify (Always Connected) */}
           <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-green-50 dark:bg-green-900/20">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
@@ -247,7 +242,6 @@ const Settings = () => {
             <CheckCircle className="w-6 h-6 text-green-500" />
           </div>
 
-          {/* YouTube Music */}
           <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
@@ -282,7 +276,6 @@ const Settings = () => {
             )}
           </div>
 
-          {/* Apple Music */}
           <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-500 rounded-lg flex items-center justify-center">
@@ -318,7 +311,6 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* ML Personalization */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -331,7 +323,6 @@ const Settings = () => {
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
                 <div className="text-sm text-gray-600 dark:text-gray-400">Feedback Count</div>
@@ -359,7 +350,6 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Model Info */}
             {mlModel && (
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
                 <div className="flex items-center gap-2 mb-3">
@@ -389,7 +379,6 @@ const Settings = () => {
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex flex-wrap gap-3">
               <Button
                 onClick={handleRetrainModel}
@@ -409,7 +398,6 @@ const Settings = () => {
               </Button>
             </div>
 
-            {/* Info */}
             {userStats?.feedbackCount < 10 && (
               <div className="mt-4 flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -423,7 +411,6 @@ const Settings = () => {
         )}
       </div>
 
-      {/* Mood Preferences */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <Palette className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
@@ -438,7 +425,6 @@ const Settings = () => {
             </div>
           ) : (<>
 
-          {/* Mood Sensitivity */}
           <div>
             <label className="block text-sm font-medium mb-3">
               Mood Sensitivity
@@ -458,7 +444,6 @@ const Settings = () => {
             </p>
           </div>
 
-          {/* Auto Optimize */}
           <div className="flex items-center justify-between">
             <div>
               <label className="font-medium">Auto-Optimize Flow</label>
@@ -480,7 +465,6 @@ const Settings = () => {
             </button>
           </div>
 
-          {/* Default Privacy */}
           <div>
             <label className="block text-sm font-medium mb-3">
               Default Playlist Privacy
@@ -512,7 +496,6 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Notifications */}
       {preferences && (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
@@ -543,7 +526,6 @@ const Settings = () => {
       </div>
       )}
 
-      {/* Save Button */}
       <div className="flex justify-end">
         <Button
           onClick={handleSavePreferences}

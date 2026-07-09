@@ -18,11 +18,6 @@ import {
   getGenreAnalysis
 } from '../../api/analytics';
 
-/**
- * Error boundary so a single bad/unexpected response shape can't crash the
- * whole tab into a blank white screen. Catches render-time exceptions only
- * (fetch errors are already handled separately via Promise.allSettled).
- */
 class MoodAnalyzerErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -61,7 +56,6 @@ class MoodAnalyzerErrorBoundary extends Component {
   }
 }
 
-// Safe chart component wrapper - prevents crashes from recharts
 const SafeMoodChart = ({ data }) => {
   if (!data || data.length === 0) {
     return (
@@ -88,9 +82,8 @@ const SafeMoodChart = ({ data }) => {
   );
 };
 
+// static class strings (never dynamically built) so Tailwind's JIT/purge
 
-// Static class strings (never dynamically built) so Tailwind's JIT/purge
-// step can actually detect and keep them in the compiled CSS.
 const FEATURE_COLOR_CLASSES = {
   purple: { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400' },
   green: { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400' },
@@ -119,7 +112,7 @@ const MOOD_COLORS = {
 
 const MoodAnalyzer = () => {
   // `loading` = true only until we have data for the very first time ever.
-  // After that, we never wipe the page again — updates happen "underneath"
+  // after that, we never wipe the page again — updates happen "underneath"
   // the already-rendered content via `updating`.
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -137,7 +130,7 @@ const MoodAnalyzer = () => {
   const isMounted = useRef(true);
   const hasLoadedOnce = useRef(false);
   const isFetchingRef = useRef(false);
-  // Bumped on every fetch; lets a slow/late response detect it's been
+  // bumped on every fetch; lets a slow/late response detect it's been
   // superseded and bail out instead of overwriting fresher data on screen.
   const requestIdRef = useRef(0);
 
@@ -151,7 +144,7 @@ const MoodAnalyzer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange, selectedDays]);
 
-  // Auto-refresh every 10 seconds. Skips a tick entirely if a fetch
+  // auto-refresh every 10 seconds. Skips a tick entirely if a fetch
   // (from polling, a filter change, or manual refresh) is already in
   // flight, so requests can never stack up behind a slow backend.
   useEffect(() => {
@@ -168,7 +161,7 @@ const MoodAnalyzer = () => {
     isFetchingRef.current = true;
     const myRequestId = ++requestIdRef.current;
 
-    // Only show the full skeleton the very first time. Every subsequent
+    // only show the full skeleton the very first time. Every subsequent
     // fetch (filter change, poll, manual refresh) keeps the current
     // dashboard on screen and just shows a small "updating" indicator.
     if (!hasLoadedOnce.current) {
@@ -186,7 +179,7 @@ const MoodAnalyzer = () => {
       getGenreAnalysis(timeRange),
     ]);
 
-    // Bail out if unmounted, or if a newer request has since started
+    // bail out if unmounted, or if a newer request has since started
     // (e.g. the user changed a filter again while this call was pending).
     if (!isMounted.current || myRequestId !== requestIdRef.current) {
       isFetchingRef.current = false;
@@ -255,7 +248,7 @@ const MoodAnalyzer = () => {
     toast.success('Data refreshed!', { id: 'refresh' });
   };
 
-  // Build chart data from aggregatedFeatures.timeline
+  // build chart data from aggregatedFeatures.timeline
   const getChartData = () => {
     const tl = moodTrends?.aggregatedFeatures?.timeline;
     if (!tl?.dates?.length) return null;
@@ -292,7 +285,6 @@ const MoodAnalyzer = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-3xl font-bold mb-1">Mood Analyzer</h1>
@@ -323,7 +315,6 @@ const MoodAnalyzer = () => {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
         <div className="grid md:grid-cols-2 gap-4">
           <div>
@@ -353,14 +344,12 @@ const MoodAnalyzer = () => {
         </div>
       </div>
 
-      {/* Error Banner */}
       {Object.keys(sectionErrors).length > 0 && Object.keys(sectionErrors).length < 5 && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-sm text-yellow-800 dark:text-yellow-200">
           Some sections unavailable: {Object.values(sectionErrors).join(' · ')}
         </div>
       )}
 
-      {/* No data at all */}
       {!moodTrends && !moodDistribution && !activityData && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
           <Heart className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -371,7 +360,6 @@ const MoodAnalyzer = () => {
         </div>
       )}
 
-      {/* Overall Mood Stats */}
       {moodTrends && (
         <div className="grid md:grid-cols-3 gap-4">
           <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-6 text-white shadow-lg">
@@ -398,7 +386,6 @@ const MoodAnalyzer = () => {
         </div>
       )}
 
-      {/* Audio Feature Averages + Chart */}
       {moodTrends?.aggregatedFeatures && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -411,7 +398,6 @@ const MoodAnalyzer = () => {
             )}
           </h2>
 
-          {/* Feature Averages */}
           {moodTrends.aggregatedFeatures.summary && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               {[
@@ -430,7 +416,6 @@ const MoodAnalyzer = () => {
             </div>
           )}
 
-          {/* Chart */}
           {chartData ? (
             <SafeMoodChart data={chartData} />
           ) : (
@@ -445,7 +430,6 @@ const MoodAnalyzer = () => {
         </div>
       )}
 
-      {/* Mood Cloud */}
       {moodTrends?.trends && moodTrends.trends.length > 0 && (() => {
         const moodCounts = {};
         moodTrends.trends.forEach(day => {
@@ -478,15 +462,14 @@ const MoodAnalyzer = () => {
         );
       })()}
 
-      {/* Mood Distribution */}
       {moodDistribution?.distribution && Object.keys(moodDistribution.distribution).length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Mood Distribution</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {Object.entries(moodDistribution.distribution)
-              // Backend sends each entry as either a plain number (legacy)
+              // backend sends each entry as either a plain number (legacy)
               // or an object { count, percentage, avg_confidence } (current
-              // ML service / fallback shape). Normalize both to primitives
+              // mL service / fallback shape). Normalize both to primitives
               // before sorting/rendering so we never hand React an object
               // as a child.
               .map(([mood, entry]) => [
@@ -523,15 +506,14 @@ const MoodAnalyzer = () => {
         </div>
       )}
 
-      {/* Mood Co-occurrence Patterns */}
       {moodPatterns?.patterns?.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Mood Co-occurrence Patterns</h2>
           <div className="space-y-3">
             {moodPatterns.patterns.slice(0, 10).map((pattern, i) => {
-              // ML service returns { moods: [mood1, mood2], co_occurrence_count,
+              // mL service returns { moods: [mood1, mood2], co_occurrence_count,
               // co_occurrence_rate }, not { mood1, mood2, count, percentage }.
-              // Support both shapes so this survives future backend tweaks.
+              // support both shapes so this survives future backend tweaks.
               const [mood1, mood2] = pattern.moods ?? [pattern.mood1, pattern.mood2];
               const count = pattern.co_occurrence_count ?? pattern.count ?? 0;
               const rate = pattern.co_occurrence_rate ?? pattern.percentage ?? 0;
@@ -557,7 +539,6 @@ const MoodAnalyzer = () => {
         </div>
       )}
 
-      {/* Activity Patterns */}
       {activityData && (
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
@@ -608,7 +589,6 @@ const MoodAnalyzer = () => {
         </div>
       )}
 
-      {/* Top Genres */}
       {genreData?.allGenres?.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
@@ -633,7 +613,6 @@ const MoodAnalyzer = () => {
         </div>
       )}
 
-      {/* Listening Insights */}
       {activityData?.insights && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6">
           <h2 className="text-xl font-bold mb-4">Listening Insights</h2>

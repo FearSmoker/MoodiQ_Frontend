@@ -13,11 +13,9 @@ const PlaylistTransfer = () => {
         </p>
       </div>
 
-      {/* Connected Services */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
         <h2 className="text-xl font-bold mb-4">Connected Services</h2>
         <div className="space-y-4">
-          {/* YouTube Music */}
           <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
@@ -42,7 +40,6 @@ const PlaylistTransfer = () => {
             )}
           </div>
 
-          {/* Apple Music */}
           <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-500 rounded-lg flex items-center justify-center">
@@ -69,7 +66,6 @@ const PlaylistTransfer = () => {
         </div>
       </div>
 
-      {/* Transfer Instructions */}
       <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-6">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <ArrowRightLeft className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
@@ -93,6 +89,5 @@ const PlaylistTransfer = () => {
     </div>
   );
 };
-
 
 export default PlaylistTransfer;

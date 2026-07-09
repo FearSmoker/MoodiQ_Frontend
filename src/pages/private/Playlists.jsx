@@ -27,7 +27,7 @@ const Playlists = () => {
       console.log('🎵 Fetching user playlists...');
       const data = await getPlaylists();
       
-      // Remove duplicates by unique ID
+      // remove duplicates by unique ID
       const uniquePlaylists = Array.from(
         new Map(data.map(p => [p.id, p])).values()
       );
@@ -80,12 +80,6 @@ const Playlists = () => {
     }
   };
 
-  /**
-   * Normalise track shape before passing to FlowOptimizer.
-   * The backend's normalizeTrackForFlow already does this, but cached
-   * responses from before the fix might still arrive in the old shape.
-   * This is a cheap O(n) safety pass on the frontend.
-   */
   const normalizeTracksForOptimizer = (tracks) => {
     if (!Array.isArray(tracks)) return [];
     return tracks.map(t => {
@@ -136,7 +130,6 @@ const Playlists = () => {
     });
   };
 
-
   const handleShare = async (playlist, moodAnalysis) => {
     if (!moodAnalysis) {
       toast.error('Please analyze the playlist first', { id: 'share-error' });
@@ -172,7 +165,6 @@ const Playlists = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">My Playlists</h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -190,7 +182,6 @@ const Playlists = () => {
         </div>
       ) : (
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Playlist Grid */}
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-bold mb-4">
@@ -232,7 +223,6 @@ const Playlists = () => {
             </div>
           </div>
 
-          {/* Playlist Details Panel */}
           <div className="lg:col-span-1">
             {selectedPlaylist ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-4 sticky top-6">
@@ -275,7 +265,6 @@ const Playlists = () => {
 
                   {moodData && moodData.tracks?.length > 0 && (
                     <>
-                      {/* Prominent Optimize Flow CTA */}
                       <button
                         onClick={() => handleOptimizeFlow(selectedPlaylist, moodData)}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all active:scale-95"
@@ -316,7 +305,6 @@ const Playlists = () => {
                   </a>
                 </div>
 
-                {/* Mood Analysis Results */}
                 {moodData && (
                   <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <div>
@@ -356,7 +344,6 @@ const Playlists = () => {
                   </div>
                 )}
 
-                {/* Playlist Tracks Preview */}
                 {playlistDetails && playlistDetails.tracks && (
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                     <h4 className="font-semibold mb-3">Tracks Preview</h4>
@@ -393,7 +380,6 @@ const Playlists = () => {
         </div>
       )}
 
-      {/* Info Box */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6">
         <div className="flex items-start gap-4">
           <Sparkles className="w-8 h-8 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />

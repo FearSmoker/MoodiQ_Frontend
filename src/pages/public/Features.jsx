@@ -55,7 +55,6 @@ const Features = () => {
   return (
     <div className="py-20">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             Powerful Features for Your Music
@@ -65,7 +64,6 @@ const Features = () => {
           </p>
         </div>
 
-        {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {features.map((feature, index) => {
             const Icon = feature.icon;
@@ -86,7 +84,6 @@ const Features = () => {
           })}
         </div>
 
-        {/* CTA Section */}
         <div className="mt-20 text-center">
           <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl p-12 max-w-4xl mx-auto">
             <h2 className="text-4xl font-bold text-white mb-4">

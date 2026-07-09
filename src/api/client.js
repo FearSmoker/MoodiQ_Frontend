@@ -8,10 +8,9 @@ const api = axios.create({
   },
 });
 
-// Request counter for debugging
+// request counter for debugging
 let requestCount = 0;
 
-// Request interceptor - add auth token
 api.interceptors.request.use(
   (config) => {
     requestCount++;
@@ -27,7 +26,7 @@ api.interceptors.request.use(
       console.log('   ⚠️ No auth token available');
     }
     
-    // Add request ID for tracking
+    // add request ID for tracking
     config.metadata = { requestId: reqId, startTime: Date.now() };
     
     return config;
@@ -38,7 +37,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle errors WITHOUT showing duplicate toasts
 api.interceptors.response.use(
   (response) => {
     const duration = Date.now() - response.config.metadata.startTime;
@@ -60,7 +58,7 @@ api.interceptors.response.use(
       code: error.response?.data?.code
     });
 
-    // Handle network errors silently
+    // handle network errors silently
     if (!error.response) {
       console.error('🌐 Network error - no response from server');
       return Promise.reject(error);
@@ -68,14 +66,14 @@ api.interceptors.response.use(
 
     const { status, data } = error.response;
 
-    // Handle Spotify token expiry
+    // handle Spotify token expiry
     if (data?.code === 'SPOTIFY_TOKEN_EXPIRED' && !originalRequest._retry) {
       console.log('🔄 Spotify token expired, attempting refresh...');
       originalRequest._retry = true;
 
       try {
-        // The backend should handle refresh automatically
-        // Just retry the original request
+        // the backend should handle refresh automatically
+        // just retry the original request
         console.log('🔄 Retrying original request...');
         return api(originalRequest);
         
@@ -87,7 +85,7 @@ api.interceptors.response.use(
       }
     }
 
-    // Handle JWT expiry or invalid token
+    // handle JWT expiry or invalid token
     if (data?.code === 'JWT_EXPIRED' || data?.code === 'INVALID_TOKEN') {
       console.log('🚪 JWT expired or invalid - redirecting to login');
       localStorage.removeItem('auth_token');
@@ -95,7 +93,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Handle unauthorized (no token)
+    // handle unauthorized (no token)
     if (status === 401 && data?.code === 'NO_TOKEN') {
       console.log('🚪 No authentication token - redirecting to login');
       localStorage.removeItem('auth_token');
@@ -103,7 +101,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Handle user not found
+    // handle user not found
     if (data?.code === 'USER_NOT_FOUND') {
       console.log('🚪 User not found - redirecting to login');
       localStorage.removeItem('auth_token');
@@ -111,8 +109,8 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // For all other errors, just log and reject
-    // Components will handle showing appropriate messages
+    // for all other errors, just log and reject
+    // components will handle showing appropriate messages
     console.error('⚠️ API Error Details:', {
       status: status,
       message: data?.message || error.message,

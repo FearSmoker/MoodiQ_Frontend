@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [localDuration, setLocalDuration] = useState(0);
   const lastTickRef = useRef(0); // wall-clock time of the last local tick, for drift-free ticking
 
-  // Every server push (track change, play/pause, seek, or periodic
+  // every server push (track change, play/pause, seek, or periodic
   // heartbeat) is authoritative — snap straight to it instead of trying
   // to guess whether it "looks like" a seek. The backend already only
   // sends updates when something meaningful changed, so trusting every
@@ -46,8 +46,8 @@ const Dashboard = () => {
     }
   }, [nowPlaying]);
 
-  // Smooth client-side progress ticker, using real elapsed wall-clock
-  // time (not an assumed fixed step) so it can't drift ahead of or
+  // smooth client-side progress ticker, using real elapsed wall-clock
+  
   // behind actual playback between server updates.
   useEffect(() => {
     if (!nowPlaying?.isPlaying) return;
@@ -77,7 +77,7 @@ const Dashboard = () => {
   useEffect(() => {
     initDashboard();
     
-    // Listen to real-time playback state updates via CustomEvent
+    // listen to real-time playback state updates via CustomEvent
     const handleWsMessage = (event) => {
       const message = event.detail;
       if (message.type === 'now_playing_update') {
@@ -98,12 +98,12 @@ const Dashboard = () => {
       const overview = await getDashboardOverview();
       setDashboardData(overview);
       
-      // Fetch now playing separately
+      // fetch now playing separately
       try {
         const playing = await getNowPlaying();
         setNowPlaying(playing);
       } catch (err) {
-        // No track currently playing
+        // no track currently playing
       }
     } catch (error) {
       console.error('Dashboard: Failed to load:', error);
@@ -120,7 +120,7 @@ const Dashboard = () => {
       const playing = await getNowPlaying();
       setNowPlaying(playing);
     } catch (error) {
-      // Silently fail
+      // silently fail
     }
   };
 
@@ -189,7 +189,6 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -206,7 +205,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={Music} label="Playlists" value={stats?.totalPlaylists || 0} color="indigo" />
         <StatCard icon={Heart} label="Saved Tracks" value={stats?.totalTracks || 0} color="pink" />
@@ -214,7 +212,6 @@ const Dashboard = () => {
         <StatCard icon={Eye} label="Total Views" value={stats?.totalShareViews || 0} color="purple" />
       </div>
 
-      {/* Now Playing - Using ORIGINAL LOGIC */}
       {nowPlaying?.isPlaying && (
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center gap-2 mb-3">
@@ -265,9 +262,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Playlists */}
         <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
@@ -319,7 +314,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Mood Analysis */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold flex items-center gap-2">
@@ -369,7 +363,6 @@ const Dashboard = () => {
 
           {analyzedMood && (
             <div className="space-y-6">
-              {/* Overall Mood */}
               <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg">
                 <h3 className="font-semibold mb-2">Overall Mood</h3>
                 <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
@@ -377,7 +370,6 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              {/* Mood Distribution */}
               {analyzedMood.moodDistribution && (
                 <div className="space-y-3">
                   <h3 className="font-semibold">Mood Distribution</h3>
@@ -394,7 +386,6 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Visualizations Grid */}
               {analyzedMood.tracks && analyzedMood.tracks.length > 0 && (
                 <div className="grid md:grid-cols-2 gap-6">
                   <MoodCloud moodData={analyzedMood.tracks} />
@@ -407,7 +398,6 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Track List */}
               <div className="space-y-2">
                 <h3 className="font-semibold">Track Moods</h3>
                 <div className="max-h-64 overflow-y-auto space-y-2">
@@ -429,9 +419,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Top Artists & Tracks */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Top Artists */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-green-600" />
@@ -459,7 +447,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Top Tracks */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-pink-600" />
@@ -488,7 +475,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="grid md:grid-cols-4 gap-4">
         <QuickActionCard 
           icon={Sparkles}
@@ -523,7 +509,7 @@ const Dashboard = () => {
   );
 };
 
-// Stat Card Component
+// stat Card Component
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const colors = {
     indigo: 'from-indigo-500 to-purple-500',
@@ -541,7 +527,7 @@ const StatCard = ({ icon: Icon, label, value, color }) => {
   );
 };
 
-// Quick Action Card Component
+// quick Action Card Component
 const QuickActionCard = ({ icon: Icon, title, description, to, color }) => {
   const colors = {
     purple: 'from-purple-500 to-pink-500',

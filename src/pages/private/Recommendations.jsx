@@ -23,7 +23,7 @@ const MOODS = [
   { label: 'Ambient', value: 'Ambient', emoji: '🌊' },
 ];
 
-// Fetch from the new Spotify-native endpoint
+// fetch from the new Spotify-native endpoint
 const getSpotifyRecommendations = async ({ limit, mood, valence, energy }) => {
   const params = new URLSearchParams({ limit });
   if (mood) params.set('mood', mood);
@@ -43,7 +43,7 @@ const Recommendations = () => {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter options
+  // filter options
   const [selectedMood, setSelectedMood] = useState(null);
   const [targetValence, setTargetValence] = useState(null);
   const [targetEnergy, setTargetEnergy] = useState(null);
@@ -52,7 +52,6 @@ const Recommendations = () => {
   useEffect(() => {
     fetchRecommendations();
   }, [selectedMood, targetValence, targetEnergy, limit]);
-
 
   const fetchRecommendations = async (opts = {}) => {
     try {
@@ -94,7 +93,6 @@ const Recommendations = () => {
   const handleMoodSelect = (moodValue) => {
     setSelectedMood(moodValue);
   };
-
 
   const handleTrackSelect = (trackId) => {
     const newSelected = new Set(selectedTracks);
@@ -167,7 +165,6 @@ const Recommendations = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-purple-600" />
@@ -178,7 +175,6 @@ const Recommendations = () => {
         </p>
       </div>
 
-      {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">Customize Recommendations</h2>
@@ -191,7 +187,6 @@ const Recommendations = () => {
           </button>
         </div>
 
-        {/* Mood Chips — always visible */}
         <div>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Filter by Mood</p>
           <div className="flex flex-wrap gap-2">
@@ -213,7 +208,6 @@ const Recommendations = () => {
 
         {showFilters && (
           <>
-            {/* Audio Sliders */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-3">
@@ -254,7 +248,6 @@ const Recommendations = () => {
               </div>
             </div>
 
-            {/* Limit */}
             <div>
               <label className="block text-sm font-medium mb-3">
                 Number of Recommendations: {limit}
@@ -290,7 +283,6 @@ const Recommendations = () => {
         </div>
       </div>
 
-      {/* Selected Tracks Summary */}
       {selectedTracks.size > 0 && (
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -321,7 +313,6 @@ const Recommendations = () => {
         </div>
       )}
 
-      {/* Recommendations Grid */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">
@@ -354,7 +345,6 @@ const Recommendations = () => {
                     : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
-                {/* Selection Checkbox */}
                 <input
                   type="checkbox"
                   checked={selectedTracks.has(track.id)}
@@ -362,7 +352,6 @@ const Recommendations = () => {
                   className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
 
-                {/* Album Art */}
                 {track.album?.images?.[0]?.url && (
                   <img
                     src={track.album.images[0].url}
@@ -371,7 +360,6 @@ const Recommendations = () => {
                   />
                 )}
 
-                {/* Track Info */}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{track.name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
@@ -382,7 +370,6 @@ const Recommendations = () => {
                   </p>
                 </div>
 
-                {/* Popularity */}
                 {track.popularity && (
                   <div className="hidden md:flex items-center gap-2">
                     <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -395,7 +382,6 @@ const Recommendations = () => {
                   </div>
                 )}
 
-                {/* Feedback Buttons */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleFeedback(track.id, true)}
@@ -413,7 +399,6 @@ const Recommendations = () => {
                   </button>
                 </div>
 
-                {/* External Link */}
                 {track.external_urls?.spotify && (
                   <a
                     href={track.external_urls.spotify}
@@ -436,7 +421,6 @@ const Recommendations = () => {
         )}
       </div>
 
-      {/* Info Box */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6">
         <div className="flex items-start gap-4">
           <Sparkles className="w-8 h-8 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />

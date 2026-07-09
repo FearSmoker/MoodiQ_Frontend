@@ -7,7 +7,7 @@ const Home = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Only process error params once on mount
+    // only process error params once on mount
     const cancelled = searchParams.get('cancelled');
     const error = searchParams.get('error');
     const message = searchParams.get('message');
@@ -20,7 +20,7 @@ const Home = () => {
         id: 'auth-cancelled',
         duration: 4000,
       });
-      // Clear URL
+      // clear URL
       window.history.replaceState({}, document.title, '/');
       return;
     }
@@ -36,7 +36,7 @@ const Home = () => {
         console.error('Failed to decode error message:', e);
       }
 
-      // Map error codes to user-friendly messages
+      // map error codes to user-friendly messages
       const errorMessages = {
         'auth_failed': 'Authentication failed. Please try again.',
         'no_code': 'Authorization incomplete. Please try logging in again.',
@@ -51,16 +51,16 @@ const Home = () => {
       
       console.log('📢 Home: Showing error toast:', displayMessage);
       
-      // Show error toast only once with unique ID
+      // show error toast only once with unique ID
       toast.error(displayMessage, { 
         id: `auth-error-${error}`,
         duration: 5000 
       });
       
-      // Clear URL params
+      // clear URL params
       window.history.replaceState({}, document.title, '/');
     }
-  }, []); // Empty dependency array - only run once on mount
+  }, []); 
 
   const handleLogin = () => {
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -79,13 +79,13 @@ const Home = () => {
     const loginUrl = `${apiUrl}/auth/login`;
     console.log('🔄 Home: Redirecting to:', loginUrl);
     
-    // Show loading toast
+    // show loading toast
     toast.loading('Redirecting to Spotify...', {
       id: 'login-redirect',
       duration: 2000
     });
     
-    // Redirect after a brief moment
+    // redirect after a brief moment
     setTimeout(() => {
       window.location.href = loginUrl;
     }, 500);
@@ -109,21 +109,17 @@ const Home = () => {
     },
   ];
 
-
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
         <div className="absolute inset-0 bg-grid-white/10" />
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-4xl mx-auto text-center text-white">
-            {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-8">
               <Sparkles className="w-4 h-4" />
               <span className="text-sm font-medium">AI-Powered Music Intelligence</span>
             </div>
 
-            {/* Heading */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               Transform Your Music Experience with
               <span className="block mt-2 bg-gradient-to-r from-yellow-200 to-pink-200 bg-clip-text text-transparent">
@@ -131,12 +127,10 @@ const Home = () => {
               </span>
             </h1>
 
-            {/* Subheading */}
             <p className="text-xl md:text-2xl mb-10 text-white/90 max-w-2xl mx-auto">
               Discover the emotions in your music. Analyze moods, optimize flow, and create the perfect playlist for every moment.
             </p>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={handleLogin}
@@ -158,7 +152,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Wave Separator */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 120" className="w-full h-12 md:h-24 text-gray-50 dark:text-gray-900">
             <path fill="currentColor" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
@@ -166,7 +159,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="py-20 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -200,7 +192,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -248,7 +239,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-indigo-600 to-purple-600">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
