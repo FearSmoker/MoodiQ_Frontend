@@ -4,8 +4,6 @@ import { getPlaylists, getPlaylist } from '../../api/playlists';
 import { getTrackLyrics, analyzeLyrics, searchLyrics } from '../../api/lyrics';
 import toast from 'react-hot-toast';
 
-// ── small helpers ──────────────────────────────────────────────────────────
-
 const Loader = () => (
   <div className="flex items-center justify-center py-12">
     <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -30,8 +28,6 @@ const sourceBadge = (source) => {
   return null;
 };
 
-// ── main component ─────────────────────────────────────────────────────────
-
 const LyricsFusion = () => {
   const [playlists, setPlaylists]             = useState([]);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
@@ -48,7 +44,6 @@ const LyricsFusion = () => {
   const [analyzing, setAnalyzing]               = useState(false);
   const [searching, setSearching]               = useState(false);
 
-  // track in-flight lyrics request to prevent race conditions
   const lyricsRequestRef = useRef(0);
 
   useEffect(() => { fetchPlaylists(); }, []);
@@ -57,7 +52,6 @@ const LyricsFusion = () => {
     try {
       setLoadingPlaylists(true);
       const data = await getPlaylists();
-      // getPlaylists already returns a deduped array
       setPlaylists(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch playlists:', err);
@@ -98,7 +92,6 @@ const LyricsFusion = () => {
   const handleTrackSelect = async (track) => {
     if (selectedTrack?.id === track.id && trackLyrics) return;
 
-    // assign a unique request ID — discard response if a newer request started
     const requestId = ++lyricsRequestRef.current;
     const toastId = toast.loading(`Fetching lyrics…`);
 
@@ -110,7 +103,6 @@ const LyricsFusion = () => {
       const artistName = track.artists?.[0]?.name || 'Unknown Artist';
       const lyrics = await getTrackLyrics(track.id, track.name, artistName);
 
-      // discard if a newer request has fired
       if (requestId !== lyricsRequestRef.current) return;
 
       setTrackLyrics(lyrics);
@@ -173,12 +165,10 @@ const LyricsFusion = () => {
     }
   };
 
-  // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-full p-4 md:p-6 text-gray-900 dark:text-white">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* header */}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
             <FileText className="w-6 h-6 text-white" />
@@ -189,7 +179,6 @@ const LyricsFusion = () => {
           </div>
         </div>
 
-        {/* search bar */}
         <div className="bg-white dark:bg-gray-900/70 border border-gray-200 dark:border-white/10 rounded-2xl p-5">
           <h2 className="font-semibold mb-3 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-300 uppercase tracking-wider">
             <Search className="w-4 h-4 text-blue-500 dark:text-blue-400" /> Search Lyrics
@@ -240,10 +229,8 @@ const LyricsFusion = () => {
           )}
         </div>
 
-        {/* three-panel grid */}
         <div className="grid lg:grid-cols-3 gap-5">
 
-          {/* panel 1: playlists */}
           <div className="bg-white dark:bg-gray-900/70 border border-gray-200 dark:border-white/10 rounded-2xl p-5 flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-sm text-gray-500 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
@@ -289,7 +276,6 @@ const LyricsFusion = () => {
             )}
           </div>
 
-          {/* panel 2: tracks */}
           <div className="bg-white dark:bg-gray-900/70 border border-gray-200 dark:border-white/10 rounded-2xl p-5 flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-sm text-gray-500 dark:text-gray-300 uppercase tracking-wider truncate">
@@ -338,7 +324,6 @@ const LyricsFusion = () => {
             )}
           </div>
 
-          {/* panel 3: lyrics */}
           <div className="bg-white dark:bg-gray-900/70 border border-gray-200 dark:border-white/10 rounded-2xl p-5 flex flex-col">
             <h2 className="font-semibold text-sm text-gray-500 dark:text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4 text-green-600 dark:text-green-400" /> Lyrics
@@ -350,7 +335,6 @@ const LyricsFusion = () => {
               </div>
             ) : (
               <div className="space-y-4 overflow-y-auto max-h-[520px]" style={{ scrollbarWidth: 'thin' }}>
-                {/* track info */}
                 <div className="pb-3 border-b border-gray-200 dark:border-white/10">
                   <p className="font-semibold text-gray-900 dark:text-white">{trackLyrics.trackName}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{trackLyrics.artistName}</p>
@@ -364,7 +348,6 @@ const LyricsFusion = () => {
                   })()}
                 </div>
 
-                {/* sentiment */}
                 {trackLyrics.sentiment && (
                   <div className="grid grid-cols-2 gap-2 pb-3 border-b border-gray-200 dark:border-white/10">
                     <div className="bg-gray-100 dark:bg-white/5 rounded-xl p-3">
@@ -384,7 +367,6 @@ const LyricsFusion = () => {
                   </div>
                 )}
 
-                {/* lyrics text */}
                 {trackLyrics.lyrics ? (
                   <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 dark:text-gray-200 font-sans">
                     {trackLyrics.lyrics}
@@ -397,7 +379,6 @@ const LyricsFusion = () => {
                   </div>
                 )}
 
-                {/* genius link */}
                 {trackLyrics.geniusUrl && (
                   <a
                     href={trackLyrics.geniusUrl}
@@ -413,7 +394,6 @@ const LyricsFusion = () => {
           </div>
         </div>
 
-        {/* playlist analysis results */}
         {lyricsAnalysis && (
           <div className="bg-white dark:bg-gray-900/70 border border-gray-200 dark:border-white/10 rounded-2xl p-6 space-y-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Playlist Lyrics Analysis</h2>
@@ -452,7 +432,6 @@ const LyricsFusion = () => {
               </div>
             )}
 
-            {/* per-track breakdown */}
             {lyricsAnalysis.lyricsData?.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-3 text-gray-500 dark:text-gray-300 text-sm uppercase tracking-wider">Track Breakdown</h3>
@@ -514,7 +493,6 @@ const LyricsFusion = () => {
           </div>
         )}
 
-        {/* empty state */}
         {!selectedPlaylist && (
           <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-500/20 rounded-2xl p-10 text-center">
             <FileText className="w-16 h-16 mx-auto mb-4 text-orange-400/60" />

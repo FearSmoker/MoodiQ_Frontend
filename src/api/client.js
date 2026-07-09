@@ -8,14 +8,12 @@ const api = axios.create({
   },
 });
 
-// centralized force-logout — clears all auth state then redirects
 const forceLogout = () => {
   localStorage.removeItem('auth_token');
-  localStorage.removeItem('moodiq_closed_at'); // clear closure timer so next login is clean
+  localStorage.removeItem('moodiq_closed_at');
   window.location.href = '/';
 };
 
-// request counter for debugging
 let requestCount = 0;
 
 api.interceptors.request.use(
@@ -33,7 +31,6 @@ api.interceptors.request.use(
       console.log('   ⚠️ No auth token available');
     }
     
-    // add request ID for tracking
     config.metadata = { requestId: reqId, startTime: Date.now() };
     
     return config;
@@ -65,7 +62,6 @@ api.interceptors.response.use(
       code: error.response?.data?.code
     });
 
-    // handle network errors silently
     if (!error.response) {
       console.error('🌐 Network error - no response from server');
       return Promise.reject(error);
@@ -73,7 +69,6 @@ api.interceptors.response.use(
 
     const { status, data } = error.response;
 
-    // handle Spotify token expiry — backend auto-refreshes; just retry once
     if (data?.code === 'SPOTIFY_TOKEN_EXPIRED' && !originalRequest._retry) {
       console.log('🔄 Spotify token expired, retrying request...');
       originalRequest._retry = true;
@@ -86,36 +81,30 @@ api.interceptors.response.use(
       }
     }
 
-    // Spotify refresh token itself is dead — must re-authenticate
     if (data?.code === 'SPOTIFY_TOKEN_REFRESH_FAILED') {
       console.log('🚪 Spotify refresh token expired — forcing logout');
       forceLogout();
       return Promise.reject(error);
     }
 
-    // handle JWT expiry or invalid token
     if (data?.code === 'JWT_EXPIRED' || data?.code === 'INVALID_TOKEN') {
       console.log('🚪 JWT expired or invalid — forcing logout');
       forceLogout();
       return Promise.reject(error);
     }
 
-    // handle unauthorized (no token)
     if (status === 401 && data?.code === 'NO_TOKEN') {
       console.log('🚪 No authentication token — forcing logout');
       forceLogout();
       return Promise.reject(error);
     }
 
-    // handle user not found
     if (data?.code === 'USER_NOT_FOUND') {
       console.log('🚪 User not found — forcing logout');
       forceLogout();
       return Promise.reject(error);
     }
 
-    // for all other errors, just log and reject
-    // components will handle showing appropriate messages
     console.error('⚠️ API Error Details:', {
       status: status,
       message: data?.message || error.message,
